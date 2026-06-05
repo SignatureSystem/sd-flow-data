@@ -8,7 +8,7 @@ app = Flask(__name__)
 # ─────────────────────────────────────────────────────────────────────────────
 
 LICENSES = {
-    "SD-ULTRA-TEST-0001": {"expires": "2025-12-31", "plan": "ultra"},
+    "SD-ULTRA-TEST-0001": {"expires": "2027-12-31", "plan": "ultra"},
 }
 
 COOKIES_NETSCAPE = """# Netscape HTTP Cookie File
