@@ -19,7 +19,7 @@
 
   // ── CONFIG ────────────────────────────────────────────────────────────────
   // Replace with your own GitHub raw URL after you create the repo/gist
-  const DATA_URL = 'https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/flow-data.json';
+  const DATA_URL = 'https://github.com/SignatureSystem/sd-flow-data';
   // ─────────────────────────────────────────────────────────────────────────
 
   const PANEL_ID    = '__sd_panel__';
