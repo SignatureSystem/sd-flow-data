@@ -9,120 +9,82 @@ app = Flask(__name__)
 # ─────────────────────────────────────────────────────────────────────────────
 
 LICENSES = {
-    "1": {"expires": "2026-12-31", "plan": "ultra"},
+    "SD-ULTRA-TEST-0001": {"expires": "2025-12-31", "plan": "ultra"},
     # "SD-ULTRA-NAME-0002": {"expires": "2025-09-01", "plan": "ultra"},
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# COOKIES — Export from Cookie-Editor as JSON (not Netscape)
-# On labs.google → Cookie-Editor → Export → Export as JSON
-# Paste the entire JSON array below between the triple quotes
+# COOKIES
 # ─────────────────────────────────────────────────────────────────────────────
 
 COOKIES_JSON = """
 [
-    {
-        "domain": ".labs.google",
-        "expirationDate": 1815297804.518073,
-        "hostOnly": false,
-        "httpOnly": false,
-        "name": "_ga_X5V89YHGSH",
-        "path": "/",
-        "sameSite": null,
-        "secure": false,
-        "session": false,
-        "storeId": null,
-        "value": "GS2.1.s1780737804$o2$g0$t1780737804$j60$l0$h0"
-    },
-    {
-        "domain": "labs.google",
-        "expirationDate": 1780840053,
-        "hostOnly": true,
-        "httpOnly": false,
-        "name": "EMAIL",
-        "path": "/",
-        "sameSite": "lax",
-        "secure": false,
-        "session": false,
-        "storeId": null,
-        "value": "%22marlenkunze63%40gmail.com%22"
-    },
-    {
-        "domain": "labs.google",
-        "hostOnly": true,
-        "httpOnly": true,
-        "name": "__Host-next-auth.csrf-token",
-        "path": "/",
-        "sameSite": "lax",
-        "secure": true,
-        "session": true,
-        "storeId": null,
-        "value": "7dc6a434f7163934d70c7dfe089a8300e850f0ac99799331a588d02d0f43038a%7Cbf6d37196ec46d2e8778f522a2efbaba9736d4333b08420fab61ea18defa8579"
-    },
-    {
-        "domain": "labs.google",
-        "hostOnly": true,
-        "httpOnly": true,
-        "name": "__Secure-next-auth.callback-url",
-        "path": "/",
-        "sameSite": "lax",
-        "secure": true,
-        "session": true,
-        "storeId": null,
-        "value": "https%3A%2F%2Flabs.google"
-    },
-    {
-        "domain": "labs.google",
-        "expirationDate": 1783334855.928762,
-        "hostOnly": true,
-        "httpOnly": true,
-        "name": "__Secure-next-auth.session-token",
-        "path": "/",
-        "sameSite": "lax",
-        "secure": true,
-        "session": false,
-        "storeId": null,
-        "value": "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..P0TmkN9Z8TnUaEVa._75eIonV_PJUgmvOeLEzMP0qz4YH4fdSyDY1XnB_PfWAn-QIXwCF_bjGjlWqtl3Di8ItJ12y5eNIxqWQkg_Ew-R29LwLayVToSyR6Ik2N0s8JCgAPuBCvfKPFbeJIuUnH9v6Fn2-lwYYMc0mSwv3UVSsov_gXKmibLglPNihFUoXw09qpcqD_KrRWJLoVM5INOgivo1XLRfGazmOF6JcBP0xOqC85RGYkwsBEzkTWjq_yjnlxlFjmZ_cxl17QrIacWm28yAjXVivXlDkjaZrsykl1lcPi9T-1VHM2ZJ2rF2pEw63ZqkJVcTxCF1Qzf3ktGywdJKDnP1ZvRraE3jQUxAKI7tEEY7j5fCzFnmvgioSAG9QoR33dKMYkYvkOZbVikJEeOlwt6hP6Qbm6gYDL2xUOm_GRni5Azm9oNIAPknq-vlOLWSTqJrlqjVYOhBemY192OHd05BJ5qRT5bO-Lr7kjWtxUg2xs9dvQ7zUE9MMtrWVLVQIxA1yHftaOaAEbGKoOgU4AiHDYn1LcwdgL_83RoinkDTQfzX8SP9pxmdnLlHN1BTG9GC-kVB34QSucxgnKT79aTbKuZuKSsALhG2HOIQMR3ntOBVW0KXmnc5yPq3BFi6utV12cXbJEUM-BrQNblu3DdILefWbKN93OUDNeXhwGFBsHay707EuOQ2bdNHygsaioubBVlUj0NHioIL4_f_Sm6xU8gC-MJrhJ1dGBTgEuNyVHBkZ0tBap0csQ2RNG1Qw1FV2HuZuS4RlPsIA0UTZRa_Y3RJuS0cwllC0_9vUDf9V1_KF_x5g-B3FFWqNLOmJfnLOkYEtZ-XBV3J_RwUSA1jdzrysf4R2B7gOR37XyNliYOQImdDqchFxLXTB9LDNugbotu26h_vBVtTgO5RV2RrL2IsBK9cvsMFQKb9VQS7-hsQ4Tzdal0SC3bbNul-76xNMr4tOkO3-h9M0sE8_RQcI5GvuXFphxvrnxj18sFcfBA.5vmAfIHruknL_mvivX8jJw"
-    },
-    {
-        "domain": ".labs.google",
-        "expirationDate": 1780840053,
-        "hostOnly": false,
-        "httpOnly": false,
-        "name": "_ga",
-        "path": "/",
-        "sameSite": "lax",
-        "secure": false,
-        "session": false,
-        "storeId": null,
-        "value": "GA1.1.2088551338.1780457807"
-    },
-    {
-        "domain": ".labs.google",
-        "expirationDate": 1780840053,
-        "hostOnly": false,
-        "httpOnly": false,
-        "name": "_ga_X2GNH8R5NS",
-        "path": "/",
-        "sameSite": "lax",
-        "secure": false,
-        "session": false,
-        "storeId": null,
-        "value": "GS2.1.s1780720581$o5$g1$t1780720589$j52$l0$h1051652884"
-    },
-    {
-        "domain": "labs.google",
-        "expirationDate": 1780840053,
-        "hostOnly": true,
-        "httpOnly": true,
-        "name": "email",
-        "path": "/",
-        "sameSite": "lax",
-        "secure": false,
-        "session": false,
-        "storeId": null,
-        "value": "marlenkunze63%40gmail.com"
-    }
+  {
+    "name": "NID",
+    "value": "532=hlpvyCe4c-pXCkUuckxpgL56_mFMPqX9wMuEVJXqxqsJBB_8AfmIUNOI13YcW-5IjK0VlaCX-vbBbX62iRyNiJQ5Q9MteeCmAfM0Az4g_2rIZ_24swdtO0-o1Hdk9FJNy803yBPavvjtIx58Yg00YOOisyqn_0O8VI7f1rdJRGQFYfCGbYZWujvU4o98tMcGG47ae50",
+    "domain": ".google.com",
+    "hostOnly": false,
+    "path": "/",
+    "secure": false,
+    "httpOnly": true,
+    "sameSite": "no_restriction",
+    "expirationDate": 1765000587
+  },
+  {
+    "name": "__Host-next-auth.csrf-token",
+    "value": "ab1c1bcecfe18f017ab6fa6e891376933672bf48541dc0df07fc1afb3764f95e%7C049e8c077e2a32a792380e19990e65f9fca1a7e6f3d587bfb6af7593b3af44d3",
+    "domain": "labs.google",
+    "hostOnly": true,
+    "path": "/",
+    "secure": true,
+    "httpOnly": true,
+    "sameSite": "Lax",
+    "expirationDate": 1783304053
+  },
+  {
+    "name": "__Secure-next-auth.callback-url",
+    "value": "https%3A%2F%2Flabs.google",
+    "domain": "labs.google",
+    "hostOnly": true,
+    "path": "/",
+    "secure": true,
+    "httpOnly": true,
+    "sameSite": "Lax",
+    "expirationDate": 1783304053
+  },
+  {
+    "name": "__Secure-next-auth.pkce.code_verifier",
+    "value": "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..C24tsv8flW4qymeo.GAdbEvKs65uTz3OcD-UYrI2TRuNvR9LY8Rc2ChrNC_3ePUXcXZXMglqAjUgleHanUfxKZoCSMBJfJCkwqMY8E-n-uPg-7Xw2AmZPm-M6sIbzQk-9YQcfkRrFjYxKtUQ1zH1k0zzw0nY719_dJ7DFhh6JKiV_L4W9VmNvTXxLN-JfbfRdoW4.Qsdrm7Kn5ocWKf003CF1qg",
+    "domain": "labs.google",
+    "hostOnly": true,
+    "path": "/",
+    "secure": true,
+    "httpOnly": true,
+    "sameSite": "Lax",
+    "expirationDate": 1783304084
+  },
+  {
+    "name": "__Secure-next-auth.session-token",
+    "value": "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..SE00BdhEHbGYbZh3.5ZVpmF6M946JDodumlH7AaH8hVtXgIkXwX66s6RK6NEBndlp8VQcQpoQh17syVbP5D8MdXHat4BfVp8dOl3HkJknTL5amM19KTMJ-VI9kUj2Bh2NWXv3GoZ_6HSoDIJb7wlEIbjpQKbn4-N42P2yZ2kM8EWn5LwVmDGkceMWKLth4swKI7iOsNBaLp_Jzz8wrydmBqbL_fKrMdiOPZNUIGf1qjOk8TB9Bkc1QFjms4YldAtLpSkXqNOHfi_rglBOx_KThD1sQe60yc-cB6p1tsO5ZfzZ3-kJFL2izW8GgnpS3mLUA9cK330JJhpFsoYPT61J03t1j4CFKvAIJgBcx8STV_MJGkzuR-mloM5GWXhTHQbzyJvD73vJV7yaa7neHLHbYF1jTtVTqgCF_331Okrwdx7xJUesEXEWyn_d_lKPNqv9ZPom5v_KSr8dM-SEKX2hPFgfkJKyVz8Q1_uTOpFa9W200mcjJBVv4R8Uz234dvXI1iMOCywABAUoV_HRqdEC6xjB_n8KxJgTrfWqkyU_61dwM8NXs6MhG6QAl3-_9JoXDWIhK1MsDp3Z6ETTFoOsrdYFI9cCFNV47sw3pPOI8WWo7IoAYqjR37HSPf8o1Zj6OJh4mTD7R-wPE0_Xzfrl-ptMBpAPwFfxSFc69TxiezPGLaG1exxTmmm6-VCsne_OpiY-kR_TrWHQREpE8G8AmeAnuVTj-Jl9nM-diLn8L8wW0JrCsi_nSs-MQPE1CdB7ZMwjgjWt0bPxsEW6feBXV40cjGHZ7FhgPYPk50n1d7yXNLuRyF9qdRgf5vD0ZQ9BL7t7Yzmz-aDBj7jED11-AI0NQ1C84cXKQidGmYln0FOMqvn0CSoxXBLQfrfWscwMjVKKt05_bF0Rc_uvcwT5SBqtXVLVcSdxTuFIR35tkxGxtdfX6pnWYvoHTu81DxF-VS7iXH--eNK8z53y2wFBno3OrL6R66m9mzgtp0J8QSxkUA.z8DtuTtIup1P1q7O2dfH_g",
+    "domain": "labs.google",
+    "hostOnly": true,
+    "path": "/",
+    "secure": true,
+    "httpOnly": true,
+    "sameSite": "Lax",
+    "expirationDate": 1783304114
+  },
+  {
+    "name": "__Secure-next-auth.state",
+    "value": "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..dx-92KVfzNTZa7-y.WwmP98NR4kx4SroqoWqRAwtuNQ6iYQg4Q4ZwnuMysTF8IJ3PEuEolsjR79kXA0l6B20x3kVErvIYRA5mRt837yroiK0SkEVnPojuxzqDwyfIgHKTYxspIqyTSx50SCYe2KIypvtds2oeyrPyKFZldyNSA4l5LlkZ39tN7jm21VgzUdQTLFE.e3qYEOu1zpH2k0_HxrOWQA",
+    "domain": "labs.google",
+    "hostOnly": true,
+    "path": "/",
+    "secure": true,
+    "httpOnly": true,
+    "sameSite": "Lax",
+    "expirationDate": 1783304084
+  }
 ]
 """
 
