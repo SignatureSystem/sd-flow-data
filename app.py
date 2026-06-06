@@ -11,112 +11,17 @@ LICENSES = {
     "SD-ULTRA-TEST-0001": {"expires": "2027-12-31", "plan": "ultra"},
 }
 
-COOKIES_NETSCAPE = """[
-    {
-        "domain": "labs.google",
-        "expirationDate": 1783295421,
-        "hostOnly": true,
-        "httpOnly": false,
-        "name": "EMAIL",
-        "path": "/",
-        "sameSite": null,
-        "secure": false,
-        "session": false,
-        "storeId": null,
-        "value": "%22rafixspark%40gmail.com%22"
-    },
-    {
-        "domain": ".labs.google",
-        "expirationDate": 1815264108.273548,
-        "hostOnly": false,
-        "httpOnly": false,
-        "name": "_ga",
-        "path": "/",
-        "sameSite": null,
-        "secure": false,
-        "session": false,
-        "storeId": null,
-        "value": "GA1.1.35101338.1780703426"
-    },
-    {
-        "domain": ".labs.google",
-        "expirationDate": 1815264109.45904,
-        "hostOnly": false,
-        "httpOnly": false,
-        "name": "_ga_X2GNH8R5NS",
-        "path": "/",
-        "sameSite": null,
-        "secure": false,
-        "session": false,
-        "storeId": null,
-        "value": "GS2.1.s1780703426$o1$g1$t1780704109$j53$l0$h1117841660"
-    },
-    {
-        "domain": "labs.google",
-        "expirationDate": 1780801312,
-        "hostOnly": true,
-        "httpOnly": true,
-        "name": "__Host-next-auth.csrf-token",
-        "path": "/",
-        "sameSite": "lax",
-        "secure": true,
-        "session": false,
-        "storeId": null,
-        "value": "aa6e511cba57faf001ee2ff2ed431acb742d34f7cfe1a896f67d1bc8102260ff%7C72143fc15bbe298f51ed759063cfb09884c4c8f389e075bc91f9b276aad7bbb5"
-    },
-    {
-        "domain": ".labs.google",
-        "expirationDate": 1780795850,
-        "hostOnly": false,
-        "httpOnly": true,
-        "name": "__Secure-next-auth.callback-url",
-        "path": "/",
-        "sameSite": "no_restriction",
-        "secure": true,
-        "session": false,
-        "storeId": null,
-        "value": "https%3A%2F%2Flabs.google%2Ffx%2Ftools%2Fflow"
-    },
-    {
-        "domain": ".labs.google",
-        "expirationDate": 1783290659,
-        "hostOnly": false,
-        "httpOnly": true,
-        "name": "__Secure-next-auth.session-token",
-        "path": "/",
-        "sameSite": "no_restriction",
-        "secure": true,
-        "session": false,
-        "storeId": null,
-        "value": "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..aKA_Hq_fxesNNe11.L99QZrBGZo4CQi7uK4Lsp1MY64cm2irVrqkKEygrd-MtLH9rqcL0sgw4yCVheJyFhw5dp6jzzvW4DE-NcMZ4D40BmSc_CJfkIxuhlvbsoyXMPsiP_owxRLM5xCqmNkSmaC_WifgiJkXfdLVwHRDAMlU0VrCLJjle7baSt8phHSQ7WNKSmHAgqassfq7roFQIRNpBuh3GiT06qAzX49F29kaByGGRY-9oMv3iJIY0tMP_d4e5Luzo0eI_TTGuf6EKkZgdIvMvICMOxAkFVN6jsx3_fAWsD_CVWsMOGYPCxI836y1CkiMz6JtfhsW6OOQgvHFAm_VIZTJttIjp6Z1pI5oQZWJb8zrmXw-rvBr0U-Flq_2wpQZwrD8oob79efohZh4ieM9V_7lg64jYkZ5_DZmsdb3PBYVEWXihp9yNRmxFk050TfDV3hqRolKgIDj1OEmoFGk8HBwG5ehoAIYf7Uai2c7-yPz5Y79-FPYjv6-PYYXMvW5BNvlSksI8QMeMe7L9bQzV2gxdNo7Om1a8BqRxIDnXxXtQlszRotEejxj6aPNeGgnY54ITPoMsUNMEIVtv2lVcGy0d6rVN21gYxTw8BcNpSBMFkA4mz5KjZJH8sKI0gZtcxDHIB-0222t2MsVIiaQVzmVGHeP4nbEae-oHuR_JKKADL7pyet4r1JgZ-9uWG-Spi3jcS5Ovao2HlLlcJsknj9JPAi1yXDIsqPxu2ja05aY4YUgs-ISYABTqUeqfhUBFtq_SnwJY-NG59HDoPSSZ6VU5973Rhjyi4Dq0b1OCpsEjGNQa1v2kzeLhOL61hRNMinICA3mmdqeCO278d9o4B18gDd2_QeXy-PT2oPITPnwFlsfhXjzLeUom4EeyCg_qPh2m27X2suHmzVg31-YMCIgfBEZpok6nF8LwhDldL4skpxqruw7gAhY3Dm6A99XX-KtdVDMijU8AT2bPjMOjsfKYRGow6v8JRX4V5tWn_w.9bPRcDwI-HN1rm2900jxAQ"
-    },
-    {
-        "domain": "labs.google",
-        "expirationDate": 1780801312,
-        "hostOnly": true,
-        "httpOnly": true,
-        "name": "__Secure-next-auth.callback-url",
-        "path": "/",
-        "sameSite": "lax",
-        "secure": true,
-        "session": false,
-        "storeId": null,
-        "value": "https%3A%2F%2Flabs.google%2Ffx%2Ftools%2Fflow"
-    },
-    {
-        "domain": "labs.google",
-        "expirationDate": 1780801312,
-        "hostOnly": true,
-        "httpOnly": true,
-        "name": "__Secure-next-auth.session-token",
-        "path": "/",
-        "sameSite": "lax",
-        "secure": true,
-        "session": false,
-        "storeId": null,
-        "value": "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..iHn8BCJnkUc7LcOn.dl609EgJgzyfylFhmDmpsv8BK8kN3S_d0REPUMglX5nb9N6g_3UoQoxmFCcoPINXNYjLWD73kN465UV2eZutl0XhV1jQlrGFr2RAKAVo7Orlpc7-MMdOAO_DvNYU-TxO-PZI4Km0VboItOl_dmdm5hrkXMA8d6mDtFGjk1p4H5nbXkoD0KYHvYYL-abQXuJRJfP4rQ72hmQ2_LP6g7Yw-NnW4hr3tftceYJ7mfNFviS01IuRHXCaSArwTavBfdy-eJS_Y5DI4yy7EjH83VMyH2N4iVS98Z0EANOjsFhh7SI8Y31Q5FGW5FkPnNkitH7RyJcB2oTOdJbjXCY-AsyWQjehHTuJhPDk8pKTCQfPpEeVMJ-tKUjI5jkMtYPF5JPLel1Nb9LTOVWV_YeQZjyZzxDZ83TegUWn0FQefjJsid7yIyFSSt2Nwc4OCOttRqm8GOlJEymNcSI2bGPUZFuhDxFDvOcsn5gM9VlWxCrNJWV5hrMgcMpaA4G-9jGm7O0wwZcmmI5V4mxVEP_9AR9RgUSp1Nt4ZfrHgJhnicPpZQF1iV9ech0obJEORTXoY9ayGs9FmY7FK9a6apof55S8Ic0oCMHAlassq6lF4lyeHE8hwmix7fagq8N7_rHzkA5jSkhmDoSd0ygxZOLHzOpkebGgsYkAlzvCbHLluYoSgHwXnJG0iwCZsVZga0KAOTRG6cvxaDHjoYs5gwtnoe-SAAg8N7v8Ab_t6mZe01EMj8L--jjO8cc-b70w5hUvnZgBP5Pk7Az1ol4iUzQHIvBRfJ8-vVLd418tq2QsDTcbnoo28f1Da6JOhrDurO5fJAIioMM9lYf8OAvOu7fW5qP8EBNlAfPljVdd2NPRcV0zLpfGH339Td8PXxyqtuUlMIJj5lw2IA0xASskuoDs9YQLaXKFoFYluTSFAme9llRadg_US6IFC1sCBzGgdYaeS9iYdvdUzK8jkFvZ7X0g_Bo1YclLK2y7UmCf0g.R16XB_JaI7ouOR1eeQoHMQ"
-    }
-]
+COOKIES_NETSCAPE = """# Netscape HTTP Cookie File
+# http://curl.haxx.se/rfc/cookie_spec.html
+# This file was generated by Cookie-Editor
+#HttpOnly_labs.google	FALSE	/	TRUE	1780705083	__Secure-next-auth.pkce.code_verifier	eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..8rNQg50E4lVpKih7.O_rMGV8ywqj9FQTdc_tHKjgVf6dGu6Ei2_fDJW9dc6mvahOWJ1LOu_EWp4jN7X3Xus0N-yEA-AhW42b4xi2_PS3RQF1Bun6HhnboxdgUlmx-iE2xpMibF8GUFDgjDBOTpS5ybmwuIZpLxhJetGKUfq5xVqgUW1zjleBLDU93XIZuGuZ_znU.5AN2szZLOfYQ6GiaiMw8Ww
+labs.google	FALSE	/	FALSE	1783295421	EMAIL	%22rafixspark%40gmail.com%22
+#HttpOnly_labs.google	FALSE	/	TRUE	1780801364	__Host-next-auth.csrf-token	aa6e511cba57faf001ee2ff2ed431acb742d34f7cfe1a896f67d1bc8102260ff%7C72143fc15bbe298f51ed759063cfb09884c4c8f389e075bc91f9b276aad7bbb5
+#HttpOnly_labs.google	FALSE	/	TRUE	1780801364	__Secure-next-auth.callback-url	https%3A%2F%2Flabs.google%2Ffx%2Ftools%2Fflow
+#HttpOnly_labs.google	FALSE	/	TRUE	1783296181	__Secure-next-auth.session-token	eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..HNqSCWiy_24ihW_n.Hllr-D0myEtQdYiBTzfyY9HBYPC2lYGlAFVTJxEwc6RAhUzIJ5Tl0nCxnbECp0CruaDwDvYmbkRvokDlkGmM3TEv_UX_zEPJN3j3lw9IgUt5vUoCI3rUGf__MKCA7NP0UeQMHjzBvJT3aWTmVX4g6wj7I6nz9yl_YHubObvlqzxLSNaMVULYuKm50KiHt087LM6OFkSLlgt7uf8c_-HX-CXHXaZ36CaQNjqtM8vdMbLZg9iysW7gHoNPiv16_FsYfJMPHj_0pN96292-yikWmlQ2rv09wvuiVZWaOJEL5PJGfg-eU51j5F5Z7dlE5HIc3VOP4Sxs37uTRRucZCGiHVnLqoDq-u2nijzo6zlBhjNZ7CrexQP8gwpZL_mKIUjlHtlKPTqvENHEmQ3Pz4ZYThdhaUa6iIeDBlbzomWI5km2d6qshMEmS_C1Qt4ufaq8GLIyE87i78gBxEMhuhFj9qJf2XPBUC01e_BgRlnBULadiNxN0ox5m2r389kxjpkv-Ls8WEWs1LWTcUEKGwTRdzPnb2hq220SdxCUoX5Phy8FZKLKg4kqBmiVFklFcqHezgro6toyz7JMRhiGsiXlTLkUPINJA4HoAebkvj3O9I-SU37aEJJdaxqA2Pd9L_jyIvalQfUFYi0e3e3qHFAkRVrh-z5ktqp7G1Xjautk78Unx-p_GplXkLK050N0mVZeL4-Ouq1uEyM0ibaF8RtCdH5_MH909lLyikueikBJCn1_Co5KKKs8W4Sjpz60At0MsGt6XIAz0T6oYR5UIbhrtqeBx-5G4U_X-3YbMPX-UQX7NNIvcjc1l2beqD4m9St39mshqy9YVBBfMCp7jckWZKgTr_xj0d3_JhzPdAxB37i1bAtbfFGjCVER6EjsFfYuAcdA8cL-ZAOcFNxWprZ-9VSjuYKvL_J5mwkN3p6u0TN-8j18nf6Z9-hiHdy83bI4uPQYBNkk5MRrBW64-pHhklVO1ZnwzyT7PlZLGBCfcdmsY_BxXEVae2DMmhb77pZU0O97Zb4SmBpI9I54RyB5.2hj8wblIbPjftqZ9Gcst6g
+#HttpOnly_labs.google	FALSE	/	TRUE	1780705083	__Secure-next-auth.state	eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..LGHMbcVHw4C83j-L.AAHx12IVzKc_UkHQNDyBC9FCyTRYgXuvJjQGuvGG5tSCBbm9JKGEsLekzlk5Io9ZTivpBkIj6gD4ctI64_er8cKPfINrlh5v-k-U6-ywxde3E41b9ypgFAJLUu5wd-Z-R6MynAajN8W1UPlDloN_LnlNajr7ajwF226hE0k5c8xdOcG6HDU.iGIoqqfDjtpRFtVZ9e661w
+.labs.google	TRUE	/	FALSE	1815264149	_ga	GA1.1.35101338.1780703426
+.labs.google	TRUE	/	FALSE	1815264151	_ga_X2GNH8R5NS	GS2.1.s1780703426$o1$g1$t1780704151$j11$l0$h1117841660
 """
 
 # ─────────────────────────────────────────────────────────────────────────────
