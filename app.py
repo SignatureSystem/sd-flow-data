@@ -9,8 +9,8 @@ app = Flask(__name__)
 # ─────────────────────────────────────────────────────────────────────────────
 
 LICENSES = {
-    "SD-ULTRA-TEST-0001": {"expires": "2026-12-31", "plan": "ultra"},
-    # "SD-ULTRA-NAME-0002": {"expires": "2025-09-01", "plan": "ultra"},
+    "1": {"expires": "2027-12-31", "plan": "ultra"},
+    # "SD-ULTRA-NAME-0002": {"expires": "2027-09-01", "plan": "ultra"},
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -20,70 +20,82 @@ LICENSES = {
 COOKIES_JSON = """
 [
   {
-    "name": "NID",
-    "value": "532=hlpvyCe4c-pXCkUuckxpgL56_mFMPqX9wMuEVJXqxqsJBB_8AfmIUNOI13YcW-5IjK0VlaCX-vbBbX62iRyNiJQ5Q9MteeCmAfM0Az4g_2rIZ_24swdtO0-o1Hdk9FJNy803yBPavvjtIx58Yg00YOOisyqn_0O8VI7f1rdJRGQFYfCGbYZWujvU4o98tMcGG47ae50",
     "domain": ".google.com",
+    "expirationDate": 1796555653,
     "hostOnly": false,
-    "path": "/",
-    "secure": false,
     "httpOnly": true,
+    "name": "NID",
+    "path": "/",
     "sameSite": "no_restriction",
-    "expirationDate": 1765000587
-  },
-  {
-    "name": "__Host-next-auth.csrf-token",
-    "value": "ab1c1bcecfe18f017ab6fa6e891376933672bf48541dc0df07fc1afb3764f95e%7C049e8c077e2a32a792380e19990e65f9fca1a7e6f3d587bfb6af7593b3af44d3",
-    "domain": "labs.google",
-    "hostOnly": true,
-    "path": "/",
     "secure": true,
-    "httpOnly": true,
-    "sameSite": "Lax",
-    "expirationDate": 1783304053
+    "session": false,
+    "storeId": null,
+    "value": "532=dorXFIqjbAxRB3SnZloTFKcpacFTC84eKcbVHIdHvdinoxENeEygzh7QV4O7r1dKiJ0n0FrCE1gtBI9b9OAWlHpMLauUiE-sX3Ro4tIQVrSLPDVhTKtD9Eu3XTtwn_iwByU73PdH0ZlIB7uGYVNwMMg71HscDTp_HGLiI4g3Xa1b9KC35wLQbqtG2a4myaKdiD8vdWyAAAC62dtFDvDeZaa7ZCbUCOgDhEA"
   },
   {
-    "name": "__Secure-next-auth.callback-url",
-    "value": "https%3A%2F%2Flabs.google",
     "domain": "labs.google",
+    "expirationDate": 1780841622,
     "hostOnly": true,
-    "path": "/",
-    "secure": true,
     "httpOnly": true,
-    "sameSite": "Lax",
-    "expirationDate": 1783304053
-  },
-  {
     "name": "__Secure-next-auth.pkce.code_verifier",
-    "value": "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..C24tsv8flW4qymeo.GAdbEvKs65uTz3OcD-UYrI2TRuNvR9LY8Rc2ChrNC_3ePUXcXZXMglqAjUgleHanUfxKZoCSMBJfJCkwqMY8E-n-uPg-7Xw2AmZPm-M6sIbzQk-9YQcfkRrFjYxKtUQ1zH1k0zzw0nY719_dJ7DFhh6JKiV_L4W9VmNvTXxLN-JfbfRdoW4.Qsdrm7Kn5ocWKf003CF1qg",
-    "domain": "labs.google",
-    "hostOnly": true,
     "path": "/",
+    "sameSite": "lax",
     "secure": true,
-    "httpOnly": true,
-    "sameSite": "Lax",
-    "expirationDate": 1783304084
+    "session": false,
+    "storeId": null,
+    "value": "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..C24tsv8flW4qymeo.GAdbEvKs65uTz3OcD-UYrI2TRuNvR9LY8Rc2ChrNC_3ePUXcXZXMglqAjUgleHanUfxKZoCSMBJfJCkwqMY8E-n-uPg-7Xw2AmZPm-M6sIbzQk-9YQcfkRrFjYxKtUQ1zH1k0zzw0nY719_dJ7DFhh6JKiV_L4W9VmNvTXxLN-JfbfRdoW4.Qsdrm7Kn5ocWKf003CF1qg"
   },
   {
+    "domain": "labs.google",
+    "expirationDate": 1780841622,
+    "hostOnly": true,
+    "httpOnly": true,
+    "name": "__Host-next-auth.csrf-token",
+    "path": "/",
+    "sameSite": "lax",
+    "secure": true,
+    "session": false,
+    "storeId": null,
+    "value": "ab1c1bcecfe18f017ab6fa6e891376933672bf48541dc0df07fc1afb3764f95e%7C049e8c077e2a32a792380e19990e65f9fca1a7e6f3d587bfb6af7593b3af44d3"
+  },
+  {
+    "domain": "labs.google",
+    "expirationDate": 1780841622,
+    "hostOnly": true,
+    "httpOnly": true,
+    "name": "__Secure-next-auth.callback-url",
+    "path": "/",
+    "sameSite": "lax",
+    "secure": true,
+    "session": false,
+    "storeId": null,
+    "value": "https%3A%2F%2Flabs.google"
+  },
+  {
+    "domain": "labs.google",
+    "expirationDate": 1783336423,
+    "hostOnly": true,
+    "httpOnly": true,
     "name": "__Secure-next-auth.session-token",
-    "value": "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..SE00BdhEHbGYbZh3.5ZVpmF6M946JDodumlH7AaH8hVtXgIkXwX66s6RK6NEBndlp8VQcQpoQh17syVbP5D8MdXHat4BfVp8dOl3HkJknTL5amM19KTMJ-VI9kUj2Bh2NWXv3GoZ_6HSoDIJb7wlEIbjpQKbn4-N42P2yZ2kM8EWn5LwVmDGkceMWKLth4swKI7iOsNBaLp_Jzz8wrydmBqbL_fKrMdiOPZNUIGf1qjOk8TB9Bkc1QFjms4YldAtLpSkXqNOHfi_rglBOx_KThD1sQe60yc-cB6p1tsO5ZfzZ3-kJFL2izW8GgnpS3mLUA9cK330JJhpFsoYPT61J03t1j4CFKvAIJgBcx8STV_MJGkzuR-mloM5GWXhTHQbzyJvD73vJV7yaa7neHLHbYF1jTtVTqgCF_331Okrwdx7xJUesEXEWyn_d_lKPNqv9ZPom5v_KSr8dM-SEKX2hPFgfkJKyVz8Q1_uTOpFa9W200mcjJBVv4R8Uz234dvXI1iMOCywABAUoV_HRqdEC6xjB_n8KxJgTrfWqkyU_61dwM8NXs6MhG6QAl3-_9JoXDWIhK1MsDp3Z6ETTFoOsrdYFI9cCFNV47sw3pPOI8WWo7IoAYqjR37HSPf8o1Zj6OJh4mTD7R-wPE0_Xzfrl-ptMBpAPwFfxSFc69TxiezPGLaG1exxTmmm6-VCsne_OpiY-kR_TrWHQREpE8G8AmeAnuVTj-Jl9nM-diLn8L8wW0JrCsi_nSs-MQPE1CdB7ZMwjgjWt0bPxsEW6feBXV40cjGHZ7FhgPYPk50n1d7yXNLuRyF9qdRgf5vD0ZQ9BL7t7Yzmz-aDBj7jED11-AI0NQ1C84cXKQidGmYln0FOMqvn0CSoxXBLQfrfWscwMjVKKt05_bF0Rc_uvcwT5SBqtXVLVcSdxTuFIR35tkxGxtdfX6pnWYvoHTu81DxF-VS7iXH--eNK8z53y2wFBno3OrL6R66m9mzgtp0J8QSxkUA.z8DtuTtIup1P1q7O2dfH_g",
-    "domain": "labs.google",
-    "hostOnly": true,
     "path": "/",
+    "sameSite": "lax",
     "secure": true,
-    "httpOnly": true,
-    "sameSite": "Lax",
-    "expirationDate": 1783304114
+    "session": false,
+    "storeId": null,
+    "value": "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..DLKZRKeBYcITIu2a.4819JwuvPDeUBr8Mv2FXkR0EfXJ4RZGaP3jXJRgsV85bRV37XpAhn65EwFFbNVRe4Rs2tMI-FRNBYPWA__1_KivAhhZ4kA_sR8oaGBfuVcP6EjCTsFnW3Bk69RTVIA2XFHIpGrby9RWYgsWZD1DqOaAwOExnqD5mleY4ahP2wJ5oo82rXwzPX4l2ssFUMyCbtXjGRLRRA6yEWPOuJJBH-wvhQINue15WpRS3c58rC39Al487V-Od3-18OeapJSPEZHyvY3VsfB-h2teh0n6asjdUngOvlPaZuAX_TRUU4vG43odUJx64_iiZAB6A2eljma42p9devfvAi3Hj0JA6TFr6ayJjXFOFwi418K9Oa-kKTHDLSlEUS6aE6L0OlrP6nA6sfb_avVM1ZSxgTiaiKifpLwk8VFZhg_dMalivIs5WsbPJSmRTW5xDuncJtZTx2ViY9C2cwczNNxxJgdgVGRNkV7hk79j4Fyk5Rmpd7GT40_kFqfc4zjCsVCaE81L2Q3KADi28s6AqKQpU4B7YooEkmJHWLGufgFwp8ZnDw4jXuJtPH2A-VfcirwJd2xJoGMVrDBQ7J3LdClB_B-XhBdBMAAbkS9aWmb5wvfO_ihihzmYOrCwVRJn8d6bq1e_tVQHqivTXOSUre4GA40kOPS5LM8XsdJDrDYmX6cGMOSzImm9yoGJJ6UqB0kzlKQXRTHt9aODMgvkOxuAxZM3tiy35ao3UHZTCqmitRXcUVB9slX1kjCPxbzuXAJVxB1zKrvMrgoF5S2fbN8wusrtGpqF65Rmjj8QDQnJtjrNmunlGYpaz1-VXOXU3Eo8Z7U1p9UcGDo-oV8-QSRraCP-P8xQauqvcMF1zTnkHx0PVJIROcw1A0OOGAX_EA1l-0X4fWr9rMsUgVJy23VdOzisBNOQf55xCIzcq5CJFGOj4oUkJcZgVZxmnqRI4bPpjjmKqw8FI7IqiWsntnI48bcH4kagjIA.z-zSaj2hOyIPaCJ7tycOZQ"
   },
   {
-    "name": "__Secure-next-auth.state",
-    "value": "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..dx-92KVfzNTZa7-y.WwmP98NR4kx4SroqoWqRAwtuNQ6iYQg4Q4ZwnuMysTF8IJ3PEuEolsjR79kXA0l6B20x3kVErvIYRA5mRt837yroiK0SkEVnPojuxzqDwyfIgHKTYxspIqyTSx50SCYe2KIypvtds2oeyrPyKFZldyNSA4l5LlkZ39tN7jm21VgzUdQTLFE.e3qYEOu1zpH2k0_HxrOWQA",
     "domain": "labs.google",
+    "expirationDate": 1780841622,
     "hostOnly": true,
-    "path": "/",
-    "secure": true,
     "httpOnly": true,
-    "sameSite": "Lax",
-    "expirationDate": 1783304084
+    "name": "__Secure-next-auth.state",
+    "path": "/",
+    "sameSite": "lax",
+    "secure": true,
+    "session": false,
+    "storeId": null,
+    "value": "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..dx-92KVfzNTZa7-y.WwmP98NR4kx4SroqoWqRAwtuNQ6iYQg4Q4ZwnuMysTF8IJ3PEuEolsjR79kXA0l6B20x3kVErvIYRA5mRt837yroiK0SkEVnPojuxzqDwyfIgHKTYxspIqyTSx50SCYe2KIypvtds2oeyrPyKFZldyNSA4l5LlkZ39tN7jm21VgzUdQTLFE.e3qYEOu1zpH2k0_HxrOWQA"
   }
 ]
 """
