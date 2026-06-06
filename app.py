@@ -4,7 +4,7 @@ import os
 app = Flask(__name__)
 
 LICENSES = {
-    "SD-ULTRA-TEST-0001": {"expires": "2027-12-31", "plan": "ultra"},
+    "1": {"expires": "2027-12-31", "plan": "ultra"},
 }
 
 # The exact Netscape string you provided
