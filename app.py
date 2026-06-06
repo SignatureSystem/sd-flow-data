@@ -9,7 +9,7 @@ app = Flask(__name__)
 # ─────────────────────────────────────────────────────────────────────────────
 
 LICENSES = {
-    "SD-ULTRA-TEST-0001": {"expires": "2025-12-31", "plan": "ultra"},
+    "SD-ULTRA-TEST-0001": {"expires": "2026-12-31", "plan": "ultra"},
     # "SD-ULTRA-NAME-0002": {"expires": "2025-09-01", "plan": "ultra"},
 }
 
