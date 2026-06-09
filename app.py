@@ -6,9 +6,8 @@ app = Flask(__name__)
 
 # ─── LICENSE KEYS ─────────────────────────────────────────────────────────────
 LICENSES = {
-    "86556":        {"expires": "2027-12-31", "plan": "ultra"},
+    "1":        {"expires": "2027-12-31", "plan": "ultra"},
     "69261123": {"expires": "2026-06-12", "plan": "ultra"},
-    "240": {"expires": "2026-06-12", "plan": "ultra"},
 }
 
 # Keys exempt from device lock (can be used on any number of devices)
@@ -155,3 +154,90 @@ def index():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
+
+# ─── Admin endpoints called by VEO bot ────────────────────────────────────────
+
+def check_secret(req):
+    s = req.args.get('secret') or (req.get_json(silent=True) or {}).get('secret', '')
+    return s == ADMIN_SECRET
+
+@app.route('/admin/add-license', methods=['POST'])
+def add_license():
+    if not check_secret(request): return jsonify({'error': 'unauthorized'}), 401
+    data = request.get_json(silent=True) or {}
+    key     = data.get('key', '').strip()
+    expires = data.get('expires', '').strip()
+    plan    = data.get('plan', 'ultra').strip()
+    if not key or not expires:
+        return jsonify({'error': 'missing key or expires'}), 400
+    LICENSES[key] = {'expires': expires, 'plan': plan}
+    return jsonify({'success': True, 'key': key, 'expires': expires})
+
+@app.route('/admin/revoke-license', methods=['POST'])
+def revoke_license():
+    if not check_secret(request): return jsonify({'error': 'unauthorized'}), 401
+    data = request.get_json(silent=True) or {}
+    key = data.get('key', '').strip()
+    if key not in LICENSES:
+        return jsonify({'error': 'key not found'}), 404
+    del LICENSES[key]
+    if key in DEVICES:
+        del DEVICES[key]
+        save_devices(DEVICES)
+    return jsonify({'success': True})
+
+@app.route('/admin/extend-license', methods=['POST'])
+def extend_license():
+    if not check_secret(request): return jsonify({'error': 'unauthorized'}), 401
+    data = request.get_json(silent=True) or {}
+    key  = data.get('key', '').strip()
+    days = int(data.get('days', 0))
+    if key not in LICENSES:
+        return jsonify({'error': 'key not found'}), 404
+    try:
+        current = datetime.strptime(LICENSES[key]['expires'], '%Y-%m-%d').date()
+        if current < datetime.utcnow().date():
+            current = datetime.utcnow().date()
+        new_expiry = (current + timedelta(days=days)).strftime('%Y-%m-%d')
+        LICENSES[key]['expires'] = new_expiry
+        return jsonify({'success': True, 'expires': new_expiry})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/reduce-license', methods=['POST'])
+def reduce_license():
+    if not check_secret(request): return jsonify({'error': 'unauthorized'}), 401
+    data = request.get_json(silent=True) or {}
+    key  = data.get('key', '').strip()
+    days = int(data.get('days', 0))
+    if key not in LICENSES:
+        return jsonify({'error': 'key not found'}), 404
+    try:
+        current    = datetime.strptime(LICENSES[key]['expires'], '%Y-%m-%d').date()
+        new_expiry = (current - timedelta(days=days)).strftime('%Y-%m-%d')
+        LICENSES[key]['expires'] = new_expiry
+        return jsonify({'success': True, 'expires': new_expiry})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/check-license', methods=['GET'])
+def check_license():
+    if not check_secret(request): return jsonify({'error': 'unauthorized'}), 401
+    key = request.args.get('key', '').strip()
+    if key not in LICENSES:
+        return jsonify({'error': 'key not found'}), 404
+    return jsonify({
+        'key':    key,
+        'entry':  LICENSES[key],
+        'device': DEVICES.get(key),
+        'exempt': key in DEVICE_LOCK_EXEMPT
+    })
+
+@app.route('/admin/licenses', methods=['GET'])
+def list_licenses():
+    if not check_secret(request): return jsonify({'error': 'unauthorized'}), 401
+    return jsonify({
+        'licenses': LICENSES,
+        'devices':  DEVICES,
+        'exempt':   list(DEVICE_LOCK_EXEMPT)
+    })
