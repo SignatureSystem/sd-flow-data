@@ -5,6 +5,46 @@ import os, json
 app = Flask(__name__)
 
 
+# ─── VERSION CONTROL ──────────────────────────────────────────────────────────
+# Set MIN_VERSION to block older extension versions
+# Extension sends its version as ?v= param on every request
+# Set via FLOW_MIN_VERSION env var or update here and redeploy
+MIN_VERSION = os.environ.get('FLOW_MIN_VERSION', '1.0.0')
+
+def version_tuple(v):
+    try:
+        return tuple(int(x) for x in str(v).split('.'))
+    except:
+        return (0, 0, 0)
+
+def version_allowed(v):
+    return version_tuple(v) >= version_tuple(MIN_VERSION)
+
+# ─── COOKIE OVERRIDE ─────────────────────────────────────────────────────────
+# Stores cookies set via !veo setcookies command — persists to /data/sd_cookies.txt
+_cookie_override = None  # overrides COOKIES_NETSCAPE when set
+
+def load_cookie_override():
+    global _cookie_override
+    try:
+        if os.path.exists(COOKIE_FILE):
+            with open(COOKIE_FILE, 'r') as f:
+                _cookie_override = f.read()
+            print('[SDFlow] Cookie override loaded from file')
+    except Exception as e:
+        print(f'[SDFlow] Cookie load error: {e}')
+
+def save_cookie_override(text):
+    global _cookie_override
+    _cookie_override = text
+    try:
+        with open(COOKIE_FILE, 'w') as f:
+            f.write(text)
+    except Exception as e:
+        print(f'[SDFlow] Cookie save error: {e}')
+
+def get_active_cookies():
+    return _cookie_override if _cookie_override else COOKIES_NETSCAPE
 
 # ─── LICENSE PERSISTENCE ──────────────────────────────────────────────────────
 LICENSE_FILE = os.path.join(DATA_DIR, 'sd_licenses.json')
@@ -45,8 +85,9 @@ LICENSES = load_licenses()
 # - After devices accumulate, copy /admin/devices output into DEVICES_JSON env var
 #   to restore after redeploys
 
-DATA_DIR  = '/data' if os.path.isdir('/data') else '/tmp'
+DATA_DIR    = '/data' if os.path.isdir('/data') else '/tmp'
 DEVICE_FILE = os.path.join(DATA_DIR, 'sd_devices.json')
+COOKIE_FILE = os.path.join(DATA_DIR, 'sd_cookies.txt')
 
 def load_devices():
     # Try persistent file first
@@ -79,6 +120,7 @@ def save_devices(devices):
 
 # Load on startup
 DEVICES = load_devices()
+load_cookie_override()
 
 # ─── COOKIES ──────────────────────────────────────────────────────────────────
 COOKIES_NETSCAPE = """\
@@ -111,6 +153,11 @@ def flow_data():
 
     key      = request.args.get('key', '').strip()
     deviceId = request.args.get('deviceId', '').strip()
+    version  = request.args.get('v', '0.0.0').strip()
+
+    # Version check — block outdated extensions
+    if not version_allowed(version):
+        return jsonify({'error': f'Extension version {version} is outdated. Please update to v{MIN_VERSION} or higher.'}), 426
 
     if not key:
         return jsonify({'error': 'missing key'}), 401
@@ -139,7 +186,7 @@ def flow_data():
 
     return jsonify({
         "licenses":         {key: entry},
-        "cookies_netscape": COOKIES_NETSCAPE,
+        "cookies_netscape": get_active_cookies(),
     })
 
 # ─── Admin: reset device lock for a key ───────────────────────────────────────
@@ -256,6 +303,40 @@ def check_license():
         'device': DEVICES.get(key),
         'exempt': key in DEVICE_LOCK_EXEMPT
     })
+
+@app.route('/admin/set-cookies', methods=['POST'])
+def set_cookies():
+    if not check_secret(request): return jsonify({'error': 'unauthorized'}), 401
+    data = request.get_json(silent=True) or {}
+    cookies_text = data.get('cookies', '').strip()
+    if not cookies_text:
+        return jsonify({'error': 'missing cookies'}), 400
+    save_cookie_override(cookies_text)
+    # Count lines to confirm
+    lines = [l for l in cookies_text.split('\n') if l.strip() and not l.startswith('#')]
+    return jsonify({'success': True, 'cookie_lines': len(lines)})
+
+@app.route('/admin/get-cookies', methods=['GET'])
+def get_cookies_endpoint():
+    if not check_secret(request): return jsonify({'error': 'unauthorized'}), 401
+    active = get_active_cookies()
+    lines = [l for l in active.split('\n') if l.strip() and not l.startswith('#')]
+    return jsonify({
+        'source': 'override' if _cookie_override else 'hardcoded',
+        'cookie_count': len(lines),
+        'cookies': active
+    })
+
+@app.route('/admin/set-min-version', methods=['POST'])
+def set_min_version():
+    global MIN_VERSION
+    if not check_secret(request): return jsonify({'error': 'unauthorized'}), 401
+    data = request.get_json(silent=True) or {}
+    ver = data.get('version', '').strip()
+    if not ver:
+        return jsonify({'error': 'missing version'}), 400
+    MIN_VERSION = ver
+    return jsonify({'success': True, 'min_version': MIN_VERSION})
 
 @app.route('/admin/licenses', methods=['GET'])
 def list_licenses():
