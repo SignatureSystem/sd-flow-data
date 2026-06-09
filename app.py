@@ -4,13 +4,7 @@ import os, json
 
 app = Flask(__name__)
 
-# ─── LICENSE KEYS — base licenses (always present even after redeploy) ──────────
-BASE_LICENSES = {
-    "69261123": {"expires": "2026-06-12", "plan": "ultra"},
-}
 
-# Keys exempt from device lock (can be used on any number of devices)
-DEVICE_LOCK_EXEMPT = {"69261123"}
 
 # ─── LICENSE PERSISTENCE ──────────────────────────────────────────────────────
 LICENSE_FILE = os.path.join(DATA_DIR, 'sd_licenses.json')
