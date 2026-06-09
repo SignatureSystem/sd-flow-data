@@ -4,14 +4,40 @@ import os, json
 
 app = Flask(__name__)
 
-# ─── LICENSE KEYS ─────────────────────────────────────────────────────────────
-LICENSES = {
-    "1":        {"expires": "2027-12-31", "plan": "ultra"},
+# ─── LICENSE KEYS — base licenses (always present even after redeploy) ──────────
+BASE_LICENSES = {
     "69261123": {"expires": "2026-06-12", "plan": "ultra"},
 }
 
 # Keys exempt from device lock (can be used on any number of devices)
 DEVICE_LOCK_EXEMPT = {"69261123"}
+
+# ─── LICENSE PERSISTENCE ──────────────────────────────────────────────────────
+LICENSE_FILE = os.path.join(DATA_DIR, 'sd_licenses.json')
+
+def load_licenses():
+    # Start with base licenses
+    licenses = dict(BASE_LICENSES)
+    # Overlay with persisted licenses (additions, changes, revocations)
+    try:
+        if os.path.exists(LICENSE_FILE):
+            with open(LICENSE_FILE, 'r') as f:
+                persisted = json.load(f)
+                licenses.update(persisted)
+    except Exception as e:
+        print(f'[SDFlow] License file load error: {e}')
+    return licenses
+
+def save_licenses():
+    try:
+        os.makedirs(DATA_DIR, exist_ok=True)
+        with open(LICENSE_FILE, 'w') as f:
+            json.dump(LICENSES, f, indent=2)
+    except Exception as e:
+        print(f'[SDFlow] License file save error: {e}')
+
+# Load on startup — merges base + persisted
+LICENSES = load_licenses()
 
 # ─── DEVICE LOCK STORAGE ──────────────────────────────────────────────────────
 # Storage strategy:
@@ -171,6 +197,7 @@ def add_license():
     if not key or not expires:
         return jsonify({'error': 'missing key or expires'}), 400
     LICENSES[key] = {'expires': expires, 'plan': plan}
+    save_licenses()
     return jsonify({'success': True, 'key': key, 'expires': expires})
 
 @app.route('/admin/revoke-license', methods=['POST'])
@@ -181,6 +208,7 @@ def revoke_license():
     if key not in LICENSES:
         return jsonify({'error': 'key not found'}), 404
     del LICENSES[key]
+    save_licenses()
     if key in DEVICES:
         del DEVICES[key]
         save_devices(DEVICES)
@@ -200,6 +228,7 @@ def extend_license():
             current = datetime.utcnow().date()
         new_expiry = (current + timedelta(days=days)).strftime('%Y-%m-%d')
         LICENSES[key]['expires'] = new_expiry
+        save_licenses()
         return jsonify({'success': True, 'expires': new_expiry})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -216,6 +245,7 @@ def reduce_license():
         current    = datetime.strptime(LICENSES[key]['expires'], '%Y-%m-%d').date()
         new_expiry = (current - timedelta(days=days)).strftime('%Y-%m-%d')
         LICENSES[key]['expires'] = new_expiry
+        save_licenses()
         return jsonify({'success': True, 'expires': new_expiry})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
