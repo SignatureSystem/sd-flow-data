@@ -5,6 +5,7 @@ app = Flask(__name__)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # LICENSE KEYS
+# Key → { "expires": "YYYY-MM-DD", "plan": "ultra" }
 # ─────────────────────────────────────────────────────────────────────────────
 
 LICENSES = {
@@ -13,9 +14,32 @@ LICENSES = {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# COOKIES — paste full Netscape export here
-# labs.google → Cookie-Editor → Export → Netscape
-# Add NID line manually at top from google.com
+# COOKIES — Netscape format
+# HOW TO GET THESE:
+#   1. Log in to the Google account on labs.google/fx/tools/flow
+#   2. Open Chrome DevTools → Application → Cookies → labs.google
+#      ALSO go to Cookies → .google.com (for NID)
+#   3. Install "Cookie-Editor" extension
+#   4. On labs.google page → Cookie-Editor → Export → Netscape → Copy
+#   5. Separately: DevTools → Application → Cookies → google.com
+#      Find "NID" cookie, note its: domain, expiry (Unix), value
+#      Add it manually as first line after the header (see example below)
+#   6. Paste full result below, replacing COOKIES_NETSCAPE
+#
+# REQUIRED COOKIES (must all be present):
+#   From labs.google:
+#     __Host-next-auth.csrf-token   (httpOnly)
+#     __Secure-next-auth.callback-url (httpOnly)
+#     __Secure-next-auth.session-token (httpOnly) ← MOST IMPORTANT
+#     EMAIL
+#     email
+#     _ga
+#     _ga_X2GNH8R5NS  (or whatever GA4 ID your account has)
+#   From .google.com (add manually):
+#     NID
+#
+# NOTE: Cookie-Editor exports #HttpOnly_ prefix for httpOnly cookies.
+#       Keep it exactly as exported — the parser handles it correctly.
 # ─────────────────────────────────────────────────────────────────────────────
 
 COOKIES_NETSCAPE = """\
@@ -49,6 +73,7 @@ def after_request(resp):
 def flow_data():
     if request.method == 'OPTIONS':
         return add_cors(app.response_class(status=204))
+    # Returns JSON compatible with both the old extension and the new one
     return jsonify({
         "licenses":         LICENSES,
         "cookies_netscape": COOKIES_NETSCAPE,
