@@ -8,7 +8,7 @@ app = Flask(__name__)
 LICENSES = {
     "86556":        {"expires": "2027-12-31", "plan": "ultra"},
     "69261123": {"expires": "2026-06-12", "plan": "ultra"},
-    "24": {"expires": "2026-06-12", "plan": "ultra"},
+    "240": {"expires": "2026-06-12", "plan": "ultra"},
 }
 
 # Keys exempt from device lock (can be used on any number of devices)
