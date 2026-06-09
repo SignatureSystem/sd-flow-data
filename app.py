@@ -1,13 +1,65 @@
 from flask import Flask, jsonify, request
 from datetime import datetime
-import os
+import os, json
 
 app = Flask(__name__)
 
 # ─── LICENSE KEYS ─────────────────────────────────────────────────────────────
 LICENSES = {
+    "86556":        {"expires": "2027-12-31", "plan": "ultra"},
     "69261123": {"expires": "2026-06-12", "plan": "ultra"},
+    "24": {"expires": "2026-06-12", "plan": "ultra"},
 }
+
+# Keys exempt from device lock (can be used on any number of devices)
+DEVICE_LOCK_EXEMPT = {"69261123"}
+
+# ─── DEVICE LOCK STORAGE ──────────────────────────────────────────────────────
+# Storage strategy:
+# 1. Railway Volume mount at /data (persistent across redeploys) — preferred
+# 2. DEVICES_JSON env var — used to seed/restore after a redeploy
+# 3. /tmp fallback — lost on restart, last resort
+#
+# HOW TO SET UP:
+# - In Railway: Add a Volume mounted at /data
+# - Set env var DEVICES_JSON={} initially
+# - After devices accumulate, copy /admin/devices output into DEVICES_JSON env var
+#   to restore after redeploys
+
+DATA_DIR  = '/data' if os.path.isdir('/data') else '/tmp'
+DEVICE_FILE = os.path.join(DATA_DIR, 'sd_devices.json')
+
+def load_devices():
+    # Try persistent file first
+    try:
+        if os.path.exists(DEVICE_FILE):
+            with open(DEVICE_FILE, 'r') as f:
+                return json.load(f)
+    except Exception:
+        pass
+    # Fall back to env var seed (useful after fresh redeploy)
+    raw = os.environ.get('DEVICES_JSON', '{}').strip()
+    try:
+        d = json.loads(raw)
+        # Write to file so subsequent calls use file
+        save_devices_to_file(d)
+        return d
+    except Exception:
+        return {}
+
+def save_devices_to_file(devices):
+    try:
+        os.makedirs(DATA_DIR, exist_ok=True)
+        with open(DEVICE_FILE, 'w') as f:
+            json.dump(devices, f)
+    except Exception:
+        pass
+
+def save_devices(devices):
+    save_devices_to_file(devices)
+
+# Load on startup
+DEVICES = load_devices()
 
 # ─── COOKIES ──────────────────────────────────────────────────────────────────
 COOKIES_NETSCAPE = """\
@@ -38,8 +90,9 @@ def flow_data():
     if request.method == 'OPTIONS':
         return add_cors(app.response_class(status=204))
 
-    # ── License key validation ───────────────────────────────────────────────
-    key = request.args.get('key', '').strip()
+    key      = request.args.get('key', '').strip()
+    deviceId = request.args.get('deviceId', '').strip()
+
     if not key:
         return jsonify({'error': 'missing key'}), 401
 
@@ -53,13 +106,47 @@ def flow_data():
         if datetime.utcnow() > expiry:
             return jsonify({'error': 'license expired'}), 403
     except Exception:
-        return jsonify({'error': 'invalid expiry'}), 500
+        return jsonify({'error': 'server error'}), 500
 
-    # ── Valid — return data ──────────────────────────────────────────────────
+    # Device lock check (skip for exempt keys)
+    if key not in DEVICE_LOCK_EXEMPT and deviceId:
+        registered = DEVICES.get(key)
+        if registered is None:
+            # First activation — register this device
+            DEVICES[key] = deviceId
+            save_devices(DEVICES)
+        elif registered != deviceId:
+            return jsonify({'error': 'Maximum device limit exceeded. This license is already active on another device. Contact +94 77 831 5058 to transfer.'}), 403
+
     return jsonify({
-        "licenses":         {key: entry},   # only return this key's entry
+        "licenses":         {key: entry},
         "cookies_netscape": COOKIES_NETSCAPE,
     })
+
+# ─── Admin: reset device lock for a key ───────────────────────────────────────
+# Usage: /admin/reset-device?secret=YOUR_SECRET&key=LICENSE_KEY
+ADMIN_SECRET = os.environ.get('ADMIN_SECRET', 'changeme123')
+
+@app.route('/admin/reset-device', methods=['GET'])
+def reset_device():
+    secret = request.args.get('secret', '')
+    key    = request.args.get('key', '').strip()
+    if secret != ADMIN_SECRET:
+        return jsonify({'error': 'unauthorized'}), 401
+    if key not in LICENSES:
+        return jsonify({'error': 'key not found'}), 404
+    if key in DEVICES:
+        del DEVICES[key]
+        save_devices(DEVICES)
+        return jsonify({'success': True, 'message': f'Device lock cleared for key {key}'})
+    return jsonify({'success': True, 'message': 'No device registered for that key'})
+
+@app.route('/admin/devices', methods=['GET'])
+def list_devices():
+    secret = request.args.get('secret', '')
+    if secret != ADMIN_SECRET:
+        return jsonify({'error': 'unauthorized'}), 401
+    return jsonify(DEVICES)
 
 @app.route('/', methods=['GET'])
 def index():
