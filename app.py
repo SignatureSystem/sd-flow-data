@@ -296,6 +296,14 @@ def get_cookies_endpoint():
         'cookies':      active
     })
 
+@app.route('/admin/version-info', methods=['GET'])
+def version_info():
+    if not check_secret(request): return jsonify({'error': 'unauthorized'}), 401
+    return jsonify({
+        'extension_version': '2.0.0',
+        'min_version': MIN_VERSION
+    })
+
 @app.route('/admin/set-min-version', methods=['POST'])
 def set_min_version():
     global MIN_VERSION
