@@ -201,6 +201,8 @@ def add_license():
     if not key or not expires:
         return jsonify({'error': 'key and expires required'}), 400
     licenses, devices, exempt = _load_all()
+    if key in licenses:
+        return jsonify({'error': 'key already exists', 'expires': licenses[key]['expires']}), 409
     licenses[key] = {'expires': expires, 'plan': plan}
     _save_all(licenses, devices, exempt)
     return jsonify({'success': True, 'key': key, 'expires': expires})
