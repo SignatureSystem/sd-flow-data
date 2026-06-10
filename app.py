@@ -39,7 +39,7 @@ def _save_all(licenses, devices, exempt):
         app.logger.error('veo_licenses save error: ' + str(e))
 
 # ─── ADMIN AUTH ───────────────────────────────────────────────────────────────
-ADMIN_SECRET = os.environ.get('ADMIN_SECRET', 'Rukaiy@123')
+ADMIN_SECRET = os.environ.get('ADMIN_SECRET', 'changeme123')
 
 def _auth(req):
     s = req.args.get('secret') or (req.get_json(silent=True) or {}).get('secret', '')
@@ -225,6 +225,25 @@ def check_license():
         'entry':  licenses[key],
         'device': devices.get(key),
         'exempt': key in exempt,
+    })
+
+@app.route('/debug', methods=['GET'])
+def debug():
+    """Shows exactly what the server can see — no auth needed."""
+    import os
+    file_exists = os.path.exists(LICENSE_FILE)
+    file_size   = os.path.getsize(LICENSE_FILE) if file_exists else 0
+    data_dir_files = os.listdir(DATA_DIR) if os.path.isdir(DATA_DIR) else []
+    licenses, devices, exempt = _load_all()
+    return jsonify({
+        'DATA_DIR':       DATA_DIR,
+        'LICENSE_FILE':   LICENSE_FILE,
+        'file_exists':    file_exists,
+        'file_size':      file_size,
+        'data_dir_files': data_dir_files,
+        'license_count':  len(licenses),
+        'license_keys':   list(licenses.keys()),
+        'exempt':         exempt,
     })
 
 @app.route('/', methods=['GET'])
