@@ -275,6 +275,8 @@ def check_license():
 # ─── DEBUG ────────────────────────────────────────────────────────────────────
 @app.route('/debug', methods=['GET'])
 def debug():
+    if not _auth(request):
+        return jsonify({'error': 'unauthorized'}), 401
     file_exists     = os.path.exists(LICENSE_FILE)
     cookies_exists  = os.path.exists(COOKIES_FILE)
     data_dir_files  = os.listdir(DATA_DIR) if os.path.isdir(DATA_DIR) else []
