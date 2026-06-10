@@ -39,7 +39,7 @@ def _save_all(licenses, devices, exempt):
         app.logger.error('veo_licenses save error: ' + str(e))
 
 # ─── ADMIN AUTH ───────────────────────────────────────────────────────────────
-ADMIN_SECRET = os.environ.get('ADMIN_SECRET', 'changeme123')
+ADMIN_SECRET = os.environ.get('ADMIN_SECRET', 'Rukaiy@123')
 
 def _auth(req):
     s = req.args.get('secret') or (req.get_json(silent=True) or {}).get('secret', '')
