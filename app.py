@@ -1,93 +1,95 @@
 from flask import Flask, jsonify, request
-from datetime import datetime
-import os, json
+from datetime import datetime, date
+import os, json, threading
 
 app = Flask(__name__)
 
-# ─── LICENSE KEYS ─────────────────────────────────────────────────────────────
-LICENSES = {
-    "1":        {"expires": "2027-12-31", "plan": "ultra"},
-    "69261123": {"expires": "2026-06-14", "plan": "ultra"},
-}
+# ─── SHARED LICENSE FILE ──────────────────────────────────────────────────────
+DATA_DIR      = '/data' if os.path.isdir('/data') else '/tmp'
+LICENSE_FILE  = os.path.join(DATA_DIR, 'veo_licenses.json')
+COOKIES_FILE  = os.path.join(DATA_DIR, 'veo_cookies.txt')
 
-# Keys exempt from device lock (can be used on any number of devices)
-DEVICE_LOCK_EXEMPT = {"69261123"}
+_file_lock    = threading.Lock()
 
-# ─── DEVICE LOCK STORAGE ──────────────────────────────────────────────────────
-# Storage strategy:
-# 1. Railway Volume mount at /data (persistent across redeploys) — preferred
-# 2. DEVICES_JSON env var — used to seed/restore after a redeploy
-# 3. /tmp fallback — lost on restart, last resort
-#
-# HOW TO SET UP:
-# - In Railway: Add a Volume mounted at /data
-# - Set env var DEVICES_JSON={} initially
-# - After devices accumulate, copy /admin/devices output into DEVICES_JSON env var
-#   to restore after redeploys
+# ─── COOKIES (in-memory + persisted to veo_cookies.txt) ──────────────────────
+_cookies_netscape = ''
+_cookies_lock     = threading.Lock()
 
-DATA_DIR  = '/data' if os.path.isdir('/data') else '/tmp'
-DEVICE_FILE = os.path.join(DATA_DIR, 'sd_devices.json')
-
-def load_devices():
-    # Try persistent file first
+def _load_cookies():
+    global _cookies_netscape
     try:
-        if os.path.exists(DEVICE_FILE):
-            with open(DEVICE_FILE, 'r') as f:
-                return json.load(f)
-    except Exception:
-        pass
-    # Fall back to env var seed (useful after fresh redeploy)
-    raw = os.environ.get('DEVICES_JSON', '{}').strip()
-    try:
-        d = json.loads(raw)
-        # Write to file so subsequent calls use file
-        save_devices_to_file(d)
-        return d
-    except Exception:
-        return {}
+        if os.path.exists(COOKIES_FILE):
+            with open(COOKIES_FILE, 'r', encoding='utf-8') as f:
+                _cookies_netscape = f.read()
+            app.logger.info('Cookies loaded from ' + COOKIES_FILE)
+    except Exception as e:
+        app.logger.error('load_cookies error: ' + str(e))
 
-def save_devices_to_file(devices):
+def _save_cookies(text):
+    global _cookies_netscape
     try:
         os.makedirs(DATA_DIR, exist_ok=True)
-        with open(DEVICE_FILE, 'w') as f:
-            json.dump(devices, f)
-    except Exception:
-        pass
+        tmp = COOKIES_FILE + '.tmp'
+        with open(tmp, 'w', encoding='utf-8') as f:
+            f.write(text)
+        os.replace(tmp, COOKIES_FILE)
+        with _cookies_lock:
+            _cookies_netscape = text
+        app.logger.info('Cookies saved to ' + COOKIES_FILE)
+        return True
+    except Exception as e:
+        app.logger.error('save_cookies error: ' + str(e))
+        return False
 
-def save_devices(devices):
-    save_devices_to_file(devices)
+# Load cookies on startup
+_load_cookies()
 
-# Load on startup
-DEVICES = load_devices()
+# ─── LICENSE FILE HELPERS ─────────────────────────────────────────────────────
+def _load_all():
+    try:
+        with _file_lock:
+            with open(LICENSE_FILE, 'r') as f:
+                d = json.load(f)
+        return d.get('licenses', {}), d.get('devices', {}), d.get('exempt', [])
+    except FileNotFoundError:
+        return {}, {}, []
+    except Exception as e:
+        app.logger.error('veo_licenses load error: ' + str(e))
+        return {}, {}, []
 
-# ─── COOKIES ──────────────────────────────────────────────────────────────────
-COOKIES_NETSCAPE = """\
-# Netscape HTTP Cookie File
-# https://curl.haxx.se/rfc/cookie_spec.html
-labs.google	FALSE	/	FALSE	0	EMAIL	%22taikhoan13%404g5t.9iq.net%22
-.labs.google	TRUE	/	FALSE	0	_ga_X5V89YHGSH	GS2.1.s1781002864$o2$g0$t1781004071$j60$l0$h0
-labs.google	FALSE	/	TRUE	0	__Host-next-auth.csrf-token	c3ad4d9a6a6c646ebed8bd33b2f76f36202eab106b6c3fc041fbbd1a851d5346%7Cdf1de7e00c67a5a5914aa11da0304da56f605bbaaf3df420d869171cd02037ea
-.labs.google	TRUE	/	FALSE	1815582268	_ga	GA1.1.300102121.1780935043
-.labs.google	TRUE	/	FALSE	1815582268	_ga_X2GNH8R5NS	GS2.1.s1781022264$o10$g1$t1781022268$j56$l0$h990588533
-labs.google	FALSE	/	TRUE	0	__Secure-next-auth.callback-url	https%3A%2F%2Flabs.google%2Ffx%2Ftools%2Fflow
-labs.google	FALSE	/	TRUE	1783614317	__Secure-next-auth.session-token	eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..V3ME-RqENvY0CA6n.Lh3vuS_YmOH-j70XHpwtzq5EqmwIPf2u_oBIa3R70LHrvXBRSBzEaVmVIhwbiSesc8oZWPctz3g5PKT7bUGv-GleyDtRgpxkWD6CCXxUa5amd57bQX5omMZy4PAolE7pzSHvkA6P416GpCTQ2LZn9_ChN4MjKSdG138HvYaXVWe17VM52M62D_vkfkCsOBM6QjuxpNqJsQ5PEB0t5SPFrqjpO1K7_cimS4igG2b4OpHdYOw8dKHPRMEJx8SWcuKH6YXttwdFotSumUFUTSm2iiIviu3BcHVey_MrdW_RWkWcso494T3FjFnD8V67Q7KZvCvFOGFuTfzEY8aGYT8QYqnMvKZ6nkZb2LhkS67WrGe2CzBCG08VRIc4ObUSeNafasZAmwJi-PvxOyaDzqbkwXVPvIZRrFvn9irDh_Srk7SzjE6gzvlqx0_jG0PExLQStGE4rPkFYqFMZLN_TviLKVWUUqaLjkE15cu1QLBR2haJm2TVprFqUkNKfhtSjhSF7OaaNKwj5eMeZ0e5vRM5cyJR5NoC5YEGiwxpYHxbh0Wgm25DpCLZYgRC-GsLyaavrQIaK8UB38fHl4ksUlEPzfNxZT9o6yQLT800uhnqOo8Al1AEHHPvZaJWiYQhh5Kd2crGbG-UQRIz8EWJBMzuPWP6Q6jmX38W-rWW9OpwD_aI1Z50lO8RIa6eJ3k0HXx5Ztgg8RYnb2XRdvPFfl-sbwhC8sD1qk7wKUrX4dL28bHkMtev-a4hyEShyMDR1iY4WcR8BDyVE3k6FKQOhxj5idrcPpczC6HDNeAFwERF_kM-18rU1IA-1Bsb2iSxpuzaNNSBTzPAFLYPEnSLKTrYMn7sFUniB5YMRbh7QNCtG6FNYJKE9JhBpnMKbCeXlxd3W0ot96YEnkYvtAoS38Ccrxe_LPHyk4Aw2V-qFa80fzThGISWVaHGwSEFrqFqynQjvZ1QKGt2udrfr7FhswpyHbemJSDgquKQOak.614VbSfPbKX2EMdzwna6yw
-"""
+def _save_all(licenses, devices, exempt):
+    try:
+        payload = {'licenses': licenses, 'devices': devices, 'exempt': exempt}
+        tmp = LICENSE_FILE + '.tmp'
+        with _file_lock:
+            os.makedirs(DATA_DIR, exist_ok=True)
+            with open(tmp, 'w') as f:
+                json.dump(payload, f, indent=2)
+            os.replace(tmp, LICENSE_FILE)
+    except Exception as e:
+        app.logger.error('veo_licenses save error: ' + str(e))
 
-def add_cors(resp):
+# ─── ADMIN AUTH ───────────────────────────────────────────────────────────────
+ADMIN_SECRET = os.environ.get('ADMIN_SECRET', 'changeme123')
+
+def _auth(req):
+    s = req.args.get('secret') or (req.get_json(silent=True) or {}).get('secret', '')
+    return s == ADMIN_SECRET
+
+# ─── CORS ─────────────────────────────────────────────────────────────────────
+@app.after_request
+def _cors(resp):
     resp.headers['Access-Control-Allow-Origin']  = '*'
-    resp.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+    resp.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
     resp.headers['Access-Control-Allow-Headers'] = '*'
     resp.headers['Cache-Control'] = 'no-store'
     return resp
 
-@app.after_request
-def after_request(resp):
-    return add_cors(resp)
-
+# ─── PUBLIC: extension fetches license + cookies ─────────────────────────────
 @app.route('/sd-flow-data', methods=['GET', 'OPTIONS'])
 def flow_data():
     if request.method == 'OPTIONS':
-        return add_cors(app.response_class(status=204))
+        return app.response_class(status=204)
 
     key      = request.args.get('key', '').strip()
     deviceId = request.args.get('deviceId', '').strip()
@@ -95,57 +97,201 @@ def flow_data():
     if not key:
         return jsonify({'error': 'missing key'}), 401
 
-    entry = LICENSES.get(key)
+    licenses, devices, exempt = _load_all()
+
+    entry = licenses.get(key)
     if not entry:
         return jsonify({'error': 'invalid key'}), 401
 
-    # Check expiry
+    # Expiry check
     try:
-        expiry = datetime.strptime(entry['expires'], '%Y-%m-%d')
-        if datetime.utcnow() > expiry:
+        expiry = date.fromisoformat(entry['expires'])
+        if date.today() > expiry:
             return jsonify({'error': 'license expired'}), 403
     except Exception:
         return jsonify({'error': 'server error'}), 500
 
-    # Device lock check (skip for exempt keys)
-    if key not in DEVICE_LOCK_EXEMPT and deviceId:
-        registered = DEVICES.get(key)
+    # Device lock (skip for exempt keys)
+    if key not in exempt and deviceId:
+        registered = devices.get(key)
         if registered is None:
-            # First activation — register this device
-            DEVICES[key] = deviceId
-            save_devices(DEVICES)
+            devices[key] = deviceId
+            _save_all(licenses, devices, exempt)
         elif registered != deviceId:
             return jsonify({'error': 'Maximum device limit exceeded. This license is already active on another device. Contact +94 77 831 5058 to transfer.'}), 403
 
+    with _cookies_lock:
+        cookies = _cookies_netscape
+
     return jsonify({
-        "licenses":         {key: entry},
-        "cookies_netscape": COOKIES_NETSCAPE,
+        'licenses':         {key: entry},
+        'cookies_netscape': cookies,
     })
 
-# ─── Admin: reset device lock for a key ───────────────────────────────────────
-# Usage: /admin/reset-device?secret=YOUR_SECRET&key=LICENSE_KEY
-ADMIN_SECRET = os.environ.get('ADMIN_SECRET', 'changeme123')
+# ─── ADMIN: set cookies ───────────────────────────────────────────────────────
+@app.route('/admin/set-cookies', methods=['POST'])
+def set_cookies():
+    if not _auth(request):
+        return jsonify({'error': 'unauthorized'}), 401
+    body = request.get_json(silent=True) or {}
+    text = body.get('cookies', '').strip()
+    if not text:
+        return jsonify({'error': 'cookies field required'}), 400
+    ok = _save_cookies(text)
+    if ok:
+        return jsonify({'success': True, 'length': len(text)})
+    return jsonify({'error': 'failed to save'}), 500
 
+# ─── ADMIN: get cookies ───────────────────────────────────────────────────────
+@app.route('/admin/get-cookies', methods=['GET'])
+def get_cookies():
+    if not _auth(request):
+        return jsonify({'error': 'unauthorized'}), 401
+    with _cookies_lock:
+        cookies = _cookies_netscape
+    return jsonify({'cookies_netscape': cookies, 'length': len(cookies)})
+
+# ─── ADMIN: reset device lock ─────────────────────────────────────────────────
 @app.route('/admin/reset-device', methods=['GET'])
 def reset_device():
-    secret = request.args.get('secret', '')
-    key    = request.args.get('key', '').strip()
-    if secret != ADMIN_SECRET:
+    if not _auth(request):
         return jsonify({'error': 'unauthorized'}), 401
-    if key not in LICENSES:
+    key = request.args.get('key', '').strip()
+    licenses, devices, exempt = _load_all()
+    if key not in licenses:
         return jsonify({'error': 'key not found'}), 404
-    if key in DEVICES:
-        del DEVICES[key]
-        save_devices(DEVICES)
-        return jsonify({'success': True, 'message': f'Device lock cleared for key {key}'})
-    return jsonify({'success': True, 'message': 'No device registered for that key'})
+    removed = devices.pop(key, None)
+    _save_all(licenses, devices, exempt)
+    msg = 'Device lock cleared for ' + key if removed else 'No device registered for that key'
+    return jsonify({'success': True, 'message': msg})
 
+# ─── ADMIN: list all devices ──────────────────────────────────────────────────
 @app.route('/admin/devices', methods=['GET'])
 def list_devices():
-    secret = request.args.get('secret', '')
-    if secret != ADMIN_SECRET:
+    if not _auth(request):
         return jsonify({'error': 'unauthorized'}), 401
-    return jsonify(DEVICES)
+    _, devices, _ = _load_all()
+    return jsonify(devices)
+
+# ─── ADMIN: list all licenses ─────────────────────────────────────────────────
+@app.route('/admin/licenses', methods=['GET'])
+def list_licenses():
+    if not _auth(request):
+        return jsonify({'error': 'unauthorized'}), 401
+    licenses, devices, exempt = _load_all()
+    return jsonify({'licenses': licenses, 'devices': devices, 'exempt': exempt})
+
+# ─── ADMIN: add license ───────────────────────────────────────────────────────
+@app.route('/admin/add-license', methods=['POST'])
+def add_license():
+    if not _auth(request):
+        return jsonify({'error': 'unauthorized'}), 401
+    body    = request.get_json(silent=True) or {}
+    key     = body.get('key', '').strip()
+    expires = body.get('expires', '').strip()
+    plan    = body.get('plan', 'ultra')
+    if not key or not expires:
+        return jsonify({'error': 'key and expires required'}), 400
+    licenses, devices, exempt = _load_all()
+    licenses[key] = {'expires': expires, 'plan': plan}
+    _save_all(licenses, devices, exempt)
+    return jsonify({'success': True, 'key': key, 'expires': expires})
+
+# ─── ADMIN: revoke license ────────────────────────────────────────────────────
+@app.route('/admin/revoke-license', methods=['POST'])
+def revoke_license():
+    if not _auth(request):
+        return jsonify({'error': 'unauthorized'}), 401
+    body = request.get_json(silent=True) or {}
+    key  = body.get('key', '').strip()
+    licenses, devices, exempt = _load_all()
+    if key not in licenses:
+        return jsonify({'error': 'key not found'}), 404
+    del licenses[key]
+    devices.pop(key, None)
+    if key in exempt:
+        exempt.remove(key)
+    _save_all(licenses, devices, exempt)
+    return jsonify({'success': True})
+
+# ─── ADMIN: extend license ────────────────────────────────────────────────────
+@app.route('/admin/extend-license', methods=['POST'])
+def extend_license():
+    if not _auth(request):
+        return jsonify({'error': 'unauthorized'}), 401
+    from datetime import timedelta
+    body = request.get_json(silent=True) or {}
+    key  = body.get('key', '').strip()
+    days = body.get('days', 0)
+    licenses, devices, exempt = _load_all()
+    if key not in licenses:
+        return jsonify({'error': 'key not found'}), 404
+    try:
+        cur     = date.fromisoformat(licenses[key]['expires'])
+        base    = max(cur, date.today())
+        new_exp = (base + timedelta(days=int(days))).isoformat()
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+    licenses[key]['expires'] = new_exp
+    _save_all(licenses, devices, exempt)
+    return jsonify({'success': True, 'expires': new_exp})
+
+# ─── ADMIN: reduce license ────────────────────────────────────────────────────
+@app.route('/admin/reduce-license', methods=['POST'])
+def reduce_license():
+    if not _auth(request):
+        return jsonify({'error': 'unauthorized'}), 401
+    from datetime import timedelta
+    body = request.get_json(silent=True) or {}
+    key  = body.get('key', '').strip()
+    days = body.get('days', 0)
+    licenses, devices, exempt = _load_all()
+    if key not in licenses:
+        return jsonify({'error': 'key not found'}), 404
+    try:
+        cur     = date.fromisoformat(licenses[key]['expires'])
+        new_exp = (cur - timedelta(days=int(days))).isoformat()
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+    licenses[key]['expires'] = new_exp
+    _save_all(licenses, devices, exempt)
+    return jsonify({'success': True, 'expires': new_exp})
+
+# ─── ADMIN: check license ─────────────────────────────────────────────────────
+@app.route('/admin/check-license', methods=['GET'])
+def check_license():
+    if not _auth(request):
+        return jsonify({'error': 'unauthorized'}), 401
+    key = request.args.get('key', '').strip()
+    licenses, devices, exempt = _load_all()
+    if key not in licenses:
+        return jsonify({'error': 'key not found'}), 404
+    return jsonify({
+        'entry':  licenses[key],
+        'device': devices.get(key),
+        'exempt': key in exempt,
+    })
+
+# ─── DEBUG ────────────────────────────────────────────────────────────────────
+@app.route('/debug', methods=['GET'])
+def debug():
+    file_exists     = os.path.exists(LICENSE_FILE)
+    cookies_exists  = os.path.exists(COOKIES_FILE)
+    data_dir_files  = os.listdir(DATA_DIR) if os.path.isdir(DATA_DIR) else []
+    licenses, devices, exempt = _load_all()
+    with _cookies_lock:
+        cookies_len = len(_cookies_netscape)
+    return jsonify({
+        'DATA_DIR':        DATA_DIR,
+        'LICENSE_FILE':    LICENSE_FILE,
+        'file_exists':     file_exists,
+        'cookies_exists':  cookies_exists,
+        'cookies_length':  cookies_len,
+        'data_dir_files':  data_dir_files,
+        'license_count':   len(licenses),
+        'license_keys':    list(licenses.keys()),
+        'exempt':          exempt,
+    })
 
 @app.route('/', methods=['GET'])
 def index():
