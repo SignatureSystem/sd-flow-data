@@ -113,12 +113,19 @@ def flow_data():
 
     # Device lock (skip for exempt keys)
     if key not in exempt and deviceId:
-        registered = devices.get(key)
-        if registered is None:
-            devices[key] = deviceId
+        # devices[key] is now a list of registered deviceIds
+        registered_list = devices.get(key, [])
+        if isinstance(registered_list, str):
+            registered_list = [registered_list]  # migrate old single-string format
+        limit = int(entry.get('device_limit', 1))
+        if deviceId in registered_list:
+            pass  # already registered, allow
+        elif len(registered_list) < limit:
+            registered_list.append(deviceId)
+            devices[key] = registered_list
             _save_all(licenses, devices, exempt)
-        elif registered != deviceId:
-            return jsonify({'error': 'Maximum device limit exceeded. This license is already active on another device. Contact +94 77 831 5058 to transfer.'}), 403
+        else:
+            return jsonify({'error': 'Maximum device limit exceeded. This license is already active on ' + str(limit) + ' device(s). Contact +94 77 831 5058 to transfer.'}), 403
 
     with _cookies_lock:
         cookies = _cookies_netscape
@@ -162,7 +169,8 @@ def reset_device():
         return jsonify({'error': 'key not found'}), 404
     removed = devices.pop(key, None)
     _save_all(licenses, devices, exempt)
-    msg = 'Device lock cleared for ' + key if removed else 'No device registered for that key'
+    count = len(removed) if isinstance(removed, list) else (1 if removed else 0)
+    msg = 'Device lock cleared for ' + key + ' (' + str(count) + ' device(s) removed)' if removed else 'No devices registered for that key'
     return jsonify({'success': True, 'message': msg})
 
 # ─── ADMIN: list all devices ──────────────────────────────────────────────────
@@ -257,6 +265,48 @@ def reduce_license():
     _save_all(licenses, devices, exempt)
     return jsonify({'success': True, 'expires': new_exp})
 
+# ─── ADMIN: set device limit ─────────────────────────────────────────────────
+@app.route('/admin/set-device-limit', methods=['POST'])
+def set_device_limit():
+    if not _auth(request):
+        return jsonify({'error': 'unauthorized'}), 401
+    import random
+    body  = request.get_json(silent=True) or {}
+    key   = body.get('key', '').strip()
+    limit = body.get('limit', 1)
+    try:
+        limit = int(limit)
+        if limit < 1:
+            raise ValueError
+    except:
+        return jsonify({'error': 'limit must be a positive integer'}), 400
+    licenses, devices, exempt = _load_all()
+    if key not in licenses:
+        return jsonify({'error': 'key not found'}), 404
+    old_limit = int(licenses[key].get('device_limit', 1))
+    licenses[key]['device_limit'] = limit
+    purged = []
+    kept   = []
+    # If limit is reduced, trim device list — keep random selection up to new limit
+    dev_list = devices.get(key, [])
+    if isinstance(dev_list, str):
+        dev_list = [dev_list]
+    if len(dev_list) > limit:
+        random.shuffle(dev_list)
+        kept   = dev_list[:limit]
+        purged = dev_list[limit:]
+        devices[key] = kept
+    _save_all(licenses, devices, exempt)
+    return jsonify({
+        'success':    True,
+        'key':        key,
+        'old_limit':  old_limit,
+        'new_limit':  limit,
+        'kept':       kept,
+        'purged':     purged,
+        'purged_count': len(purged),
+    })
+
 # ─── ADMIN: check license ─────────────────────────────────────────────────────
 @app.route('/admin/check-license', methods=['GET'])
 def check_license():
@@ -266,10 +316,15 @@ def check_license():
     licenses, devices, exempt = _load_all()
     if key not in licenses:
         return jsonify({'error': 'key not found'}), 404
+    dev = devices.get(key, [])
+    if isinstance(dev, str):
+        dev = [dev]
     return jsonify({
-        'entry':  licenses[key],
-        'device': devices.get(key),
-        'exempt': key in exempt,
+        'entry':   licenses[key],
+        'devices': dev,
+        'device_count': len(dev),
+        'device_limit': int(licenses[key].get('device_limit', 1)),
+        'exempt':  key in exempt,
     })
 
 # ─── DEBUG ────────────────────────────────────────────────────────────────────
@@ -292,6 +347,7 @@ def debug():
         'data_dir_files':  data_dir_files,
         'license_count':   len(licenses),
         'license_keys':    list(licenses.keys()),
+        'device_counts':   {k: len(v) if isinstance(v, list) else 1 for k, v in devices.items()},
         'exempt':          exempt,
     })
 
