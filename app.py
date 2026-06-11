@@ -11,6 +11,10 @@ COOKIES_FILE  = os.path.join(DATA_DIR, 'veo_cookies.txt')
 
 _file_lock    = threading.Lock()
 
+# In-memory set of device IDs that were reset — forces logout on next check-in
+_revoked_devices     = set()
+_revoked_devices_lock = threading.Lock()
+
 # ─── COOKIES (in-memory + persisted to veo_cookies.txt) ──────────────────────
 _cookies_netscape = ''
 _cookies_lock     = threading.Lock()
@@ -103,15 +107,10 @@ def flow_data():
     if not entry:
         return jsonify({'error': 'invalid key'}), 401
 
-    # Expiry check — supports both date (YYYY-MM-DD) and datetime (YYYY-MM-DDTHH:MM:SS)
+    # Expiry check
     try:
-        from datetime import datetime as dt
-        raw = entry['expires']
-        try:
-            expiry = dt.fromisoformat(raw)
-        except:
-            expiry = dt.combine(date.fromisoformat(raw), __import__('datetime').time.max)
-        if dt.now() > expiry:
+        expiry = date.fromisoformat(entry['expires'])
+        if date.today() > expiry:
             return jsonify({'error': 'license expired'}), 403
     except Exception:
         return jsonify({'error': 'server error'}), 500
@@ -120,13 +119,37 @@ def flow_data():
     if key not in exempt and deviceId:
         # devices[key] is now a list of registered deviceIds
         registered_list = devices.get(key, [])
-        if isinstance(registered_list, str):
-            registered_list = [registered_list]  # migrate old single-string format
+        # Migrate old formats to new {id, registered_at} format
+        migrated = []
+        for d in (registered_list if isinstance(registered_list, list) else [registered_list] if registered_list else []):
+            if isinstance(d, str):
+                migrated.append({'id': d, 'registered_at': 'Unknown'})
+            else:
+                migrated.append(d)
+        registered_list = migrated
         limit = int(entry.get('device_limit', 1))
-        if deviceId in registered_list:
-            pass  # already registered, allow
+        existing_ids = [d['id'] for d in registered_list]
+
+        # Check if this device was reset — force logout
+        with _revoked_devices_lock:
+            if deviceId in _revoked_devices:
+                _revoked_devices.discard(deviceId)
+                return jsonify({'error': 'device_reset'}), 403
+
+        if deviceId in existing_ids:
+            # Update last_seen for this device
+            from datetime import datetime
+            now_str = datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
+            for d in registered_list:
+                if d['id'] == deviceId:
+                    d['last_seen'] = now_str
+                    break
+            devices[key] = registered_list
+            _save_all(licenses, devices, exempt)
         elif len(registered_list) < limit:
-            registered_list.append(deviceId)
+            from datetime import datetime
+            now_str = datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
+            registered_list.append({'id': deviceId, 'registered_at': now_str, 'last_seen': now_str})
             devices[key] = registered_list
             _save_all(licenses, devices, exempt)
         else:
@@ -174,9 +197,19 @@ def reset_device():
         return jsonify({'error': 'key not found'}), 404
     removed = devices.pop(key, None)
     _save_all(licenses, devices, exempt)
-    count = len(removed) if isinstance(removed, list) else (1 if removed else 0)
-    msg = 'Device lock cleared for ' + key + ' (' + str(count) + ' device(s) removed)' if removed else 'No devices registered for that key'
-    return jsonify({'success': True, 'message': msg})
+    # Add removed device IDs to revoked set for forced logout
+    if removed:
+        removed_list = removed if isinstance(removed, list) else [removed]
+        with _revoked_devices_lock:
+            for d in removed_list:
+                dev_id = d['id'] if isinstance(d, dict) else d
+                _revoked_devices.add(dev_id)
+        count = len(removed_list)
+        msg = 'Device lock cleared for ' + key + ' (' + str(count) + ' device(s) will be logged out)'
+    else:
+        count = 0
+        msg = 'No devices registered for that key'
+    return jsonify({'success': True, 'message': msg, 'revoked_count': count})
 
 # ─── ADMIN: list all devices ──────────────────────────────────────────────────
 @app.route('/admin/devices', methods=['GET'])
@@ -242,15 +275,9 @@ def extend_license():
     if key not in licenses:
         return jsonify({'error': 'key not found'}), 404
     try:
-        from datetime import datetime as dt
-        hours = body.get('hours', body.get('days', 0) * 24)
-        raw = licenses[key]['expires']
-        try:
-            cur = dt.fromisoformat(raw)
-        except:
-            cur = dt.combine(date.fromisoformat(raw), __import__('datetime').time.min)
-        base = max(cur, dt.now())
-        new_exp = (base + timedelta(hours=int(hours))).strftime('%Y-%m-%dT%H:%M:%S')
+        cur     = date.fromisoformat(licenses[key]['expires'])
+        base    = max(cur, date.today())
+        new_exp = (base + timedelta(days=int(days))).isoformat()
     except Exception as e:
         return jsonify({'error': str(e)}), 400
     licenses[key]['expires'] = new_exp
@@ -270,14 +297,8 @@ def reduce_license():
     if key not in licenses:
         return jsonify({'error': 'key not found'}), 404
     try:
-        from datetime import datetime as dt
-        hours = body.get('hours', body.get('days', 0) * 24)
-        raw = licenses[key]['expires']
-        try:
-            cur = dt.fromisoformat(raw)
-        except:
-            cur = dt.combine(date.fromisoformat(raw), __import__('datetime').time.min)
-        new_exp = (cur - timedelta(hours=int(hours))).strftime('%Y-%m-%dT%H:%M:%S')
+        cur     = date.fromisoformat(licenses[key]['expires'])
+        new_exp = (cur - timedelta(days=int(days))).isoformat()
     except Exception as e:
         return jsonify({'error': str(e)}), 400
     licenses[key]['expires'] = new_exp
@@ -309,11 +330,13 @@ def set_device_limit():
     # If limit is reduced, trim device list — keep random selection up to new limit
     dev_list = devices.get(key, [])
     if isinstance(dev_list, str):
-        dev_list = [dev_list]
+        dev_list = [{'id': dev_list, 'registered_at': 'Unknown'}]
+    elif isinstance(dev_list, list):
+        dev_list = [d if isinstance(d, dict) else {'id': d, 'registered_at': 'Unknown'} for d in dev_list]
     if len(dev_list) > limit:
         random.shuffle(dev_list)
         kept   = dev_list[:limit]
-        purged = dev_list[limit:]
+        purged = [d['id'] for d in dev_list[limit:]]
         devices[key] = kept
     _save_all(licenses, devices, exempt)
     return jsonify({
@@ -337,13 +360,28 @@ def check_license():
         return jsonify({'error': 'key not found'}), 404
     dev = devices.get(key, [])
     if isinstance(dev, str):
-        dev = [dev]
+        dev = [{'id': dev, 'registered_at': 'Unknown', 'last_seen': None}]
+    elif isinstance(dev, list):
+        dev = [d if isinstance(d, dict) else {'id': d, 'registered_at': 'Unknown', 'last_seen': None} for d in dev]
+    # Determine active status (last_seen within 10 minutes = active)
+    from datetime import datetime, timedelta
+    now = datetime.now()
+    for d in dev:
+        ls = d.get('last_seen')
+        if ls:
+            try:
+                last = datetime.fromisoformat(ls)
+                d['active'] = (now - last).total_seconds() < 600
+            except:
+                d['active'] = False
+        else:
+            d['active'] = False
     return jsonify({
-        'entry':   licenses[key],
-        'devices': dev,
+        'entry':        licenses[key],
+        'devices':      dev,
         'device_count': len(dev),
         'device_limit': int(licenses[key].get('device_limit', 1)),
-        'exempt':  key in exempt,
+        'exempt':       key in exempt,
     })
 
 # ─── DEBUG ────────────────────────────────────────────────────────────────────
