@@ -107,10 +107,15 @@ def flow_data():
     if not entry:
         return jsonify({'error': 'invalid key'}), 401
 
-    # Expiry check
+    # Expiry check — supports both date (YYYY-MM-DD) and datetime (YYYY-MM-DDTHH:MM:SS)
     try:
-        expiry = date.fromisoformat(entry['expires'])
-        if date.today() > expiry:
+        from datetime import datetime as dt
+        raw = entry['expires']
+        try:
+            expiry = dt.fromisoformat(raw)
+        except:
+            expiry = dt.combine(date.fromisoformat(raw), __import__('datetime').time.max)
+        if dt.now() > expiry:
             return jsonify({'error': 'license expired'}), 403
     except Exception:
         return jsonify({'error': 'server error'}), 500
@@ -275,9 +280,15 @@ def extend_license():
     if key not in licenses:
         return jsonify({'error': 'key not found'}), 404
     try:
-        cur     = date.fromisoformat(licenses[key]['expires'])
-        base    = max(cur, date.today())
-        new_exp = (base + timedelta(days=int(days))).isoformat()
+        from datetime import datetime as dt
+        hours = int(body.get('hours', body.get('days', 0) * 24))
+        raw = licenses[key]['expires']
+        try:
+            cur = dt.fromisoformat(raw)
+        except:
+            cur = dt.combine(date.fromisoformat(raw), __import__('datetime').time.min)
+        base    = max(cur, dt.now())
+        new_exp = (base + timedelta(hours=hours)).strftime('%Y-%m-%dT%H:%M:%S')
     except Exception as e:
         return jsonify({'error': str(e)}), 400
     licenses[key]['expires'] = new_exp
@@ -297,8 +308,14 @@ def reduce_license():
     if key not in licenses:
         return jsonify({'error': 'key not found'}), 404
     try:
-        cur     = date.fromisoformat(licenses[key]['expires'])
-        new_exp = (cur - timedelta(days=int(days))).isoformat()
+        from datetime import datetime as dt
+        hours = int(body.get('hours', body.get('days', 0) * 24))
+        raw = licenses[key]['expires']
+        try:
+            cur = dt.fromisoformat(raw)
+        except:
+            cur = dt.combine(date.fromisoformat(raw), __import__('datetime').time.min)
+        new_exp = (cur - timedelta(hours=hours)).strftime('%Y-%m-%dT%H:%M:%S')
     except Exception as e:
         return jsonify({'error': str(e)}), 400
     licenses[key]['expires'] = new_exp
