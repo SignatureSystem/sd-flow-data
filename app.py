@@ -1,3 +1,17 @@
+# ================================================================================
+# SIGNATURE DIGITAL — FLOW SERVER
+# ================================================================================
+# SUMMARY:
+#   Fixed timestamps being saved in the wrong timezone. All times are now
+#   saved as UTC with a clear Z label so the bot converts them correctly to SL time.
+#
+# DATE/TIME (SL) : 12-06-2026-6026
+# ────────────────────────────────────────────────────────────────────────────────
+# [FIXED] last_seen stored as UTC with Z suffix
+# [FIXED] registered_at stored as UTC with Z suffix
+# [FIXED] active status check uses UTC-aware comparison
+# ================================================================================
+
 from flask import Flask, jsonify, request
 from datetime import datetime, date
 import os, json, threading
@@ -110,7 +124,9 @@ def flow_data():
     # Expiry check — supports both date (YYYY-MM-DD) and datetime (YYYY-MM-DDTHH:MM:SS)
     try:
         from datetime import datetime as dt
-        raw = entry['expires']
+        raw = entry.get('expires', '')
+        if not raw:
+            return jsonify({'error': 'license expired'}), 403
         try:
             expiry = dt.fromisoformat(raw)
         except:
@@ -142,9 +158,9 @@ def flow_data():
                 return jsonify({'error': 'device_reset'}), 403
 
         if deviceId in existing_ids:
-            # Update last_seen for this device
-            from datetime import datetime
-            now_str = datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
+            # Update last_seen as UTC
+            from datetime import datetime, timezone
+            now_str = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
             for d in registered_list:
                 if d['id'] == deviceId:
                     d['last_seen'] = now_str
@@ -153,7 +169,8 @@ def flow_data():
             _save_all(licenses, devices, exempt)
         elif len(registered_list) < limit:
             from datetime import datetime
-            now_str = datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
+            from datetime import datetime, timezone
+            now_str = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
             registered_list.append({'id': deviceId, 'registered_at': now_str, 'last_seen': now_str})
             devices[key] = registered_list
             _save_all(licenses, devices, exempt)
@@ -382,12 +399,16 @@ def check_license():
         dev = [d if isinstance(d, dict) else {'id': d, 'registered_at': 'Unknown', 'last_seen': None} for d in dev]
     # Determine active status (last_seen within 10 minutes = active)
     from datetime import datetime, timedelta
-    now = datetime.now()
+    from datetime import datetime, timezone, timedelta
+    now = datetime.now(timezone.utc)
     for d in dev:
         ls = d.get('last_seen')
         if ls:
             try:
-                last = datetime.fromisoformat(ls)
+                last_str = ls.replace('Z', '+00:00')
+                last = datetime.fromisoformat(last_str)
+                if last.tzinfo is None:
+                    last = last.replace(tzinfo=timezone.utc)
                 d['active'] = (now - last).total_seconds() < 600
             except:
                 d['active'] = False
