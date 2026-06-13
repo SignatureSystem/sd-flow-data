@@ -68,16 +68,23 @@ def _load_all():
         with _file_lock:
             with open(LICENSE_FILE, 'r') as f:
                 d = json.load(f)
-        return d.get('licenses', {}), d.get('devices', {}), d.get('exempt', [])
+        return d.get('licenses', {}), d.get('devices', {}), d.get('exempt', []), d.get('ui_config', {})
     except FileNotFoundError:
-        return {}, {}, []
+        return {}, {}, [], {}
     except Exception as e:
         app.logger.error('veo_licenses load error: ' + str(e))
-        return {}, {}, []
+        return {}, {}, [], {}
 
-def _save_all(licenses, devices, exempt):
+def _save_all(licenses, devices, exempt, ui_config=None):
     try:
-        payload = {'licenses': licenses, 'devices': devices, 'exempt': exempt}
+        if ui_config is None:
+            try:
+                with _file_lock:
+                    with open(LICENSE_FILE, 'r') as f:
+                        ui_config = json.load(f).get('ui_config', {})
+            except:
+                ui_config = {}
+        payload = {'licenses': licenses, 'devices': devices, 'exempt': exempt, 'ui_config': ui_config}
         tmp = LICENSE_FILE + '.tmp'
         with _file_lock:
             os.makedirs(DATA_DIR, exist_ok=True)
@@ -166,14 +173,14 @@ def flow_data():
                     d['last_seen'] = now_str
                     break
             devices[key] = registered_list
-            _save_all(licenses, devices, exempt)
+            _save_all(licenses, devices, exempt, ui_config)
         elif len(registered_list) < limit:
             from datetime import datetime
             from datetime import datetime, timezone
             now_str = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
             registered_list.append({'id': deviceId, 'registered_at': now_str, 'last_seen': now_str})
             devices[key] = registered_list
-            _save_all(licenses, devices, exempt)
+            _save_all(licenses, devices, exempt, ui_config)
         else:
             return jsonify({'error': 'Maximum device limit exceeded. This license is already active on ' + str(limit) + ' device(s). Contact +94 77 831 5058 to transfer.'}), 403
 
@@ -218,7 +225,7 @@ def reset_device():
     if key not in licenses:
         return jsonify({'error': 'key not found'}), 404
     removed = devices.pop(key, None)
-    _save_all(licenses, devices, exempt)
+    _save_all(licenses, devices, exempt, ui_config)
     # Add removed device IDs to revoked set for forced logout
     if removed:
         removed_list = removed if isinstance(removed, list) else [removed]
@@ -264,7 +271,7 @@ def add_license():
     if key in licenses:
         return jsonify({'error': 'key already exists', 'expires': licenses[key]['expires']}), 409
     licenses[key] = {'expires': expires, 'plan': plan}
-    _save_all(licenses, devices, exempt)
+    _save_all(licenses, devices, exempt, ui_config)
     return jsonify({'success': True, 'key': key, 'expires': expires})
 
 # ─── ADMIN: revoke license ────────────────────────────────────────────────────
@@ -281,7 +288,7 @@ def revoke_license():
     devices.pop(key, None)
     if key in exempt:
         exempt.remove(key)
-    _save_all(licenses, devices, exempt)
+    _save_all(licenses, devices, exempt, ui_config)
     return jsonify({'success': True})
 
 # ─── ADMIN: extend license ────────────────────────────────────────────────────
@@ -309,7 +316,7 @@ def extend_license():
     except Exception as e:
         return jsonify({'error': str(e)}), 400
     licenses[key]['expires'] = new_exp
-    _save_all(licenses, devices, exempt)
+    _save_all(licenses, devices, exempt, ui_config)
     return jsonify({'success': True, 'expires': new_exp})
 
 # ─── ADMIN: reduce license ────────────────────────────────────────────────────
@@ -336,7 +343,7 @@ def reduce_license():
     except Exception as e:
         return jsonify({'error': str(e)}), 400
     licenses[key]['expires'] = new_exp
-    _save_all(licenses, devices, exempt)
+    _save_all(licenses, devices, exempt, ui_config)
     return jsonify({'success': True, 'expires': new_exp})
 
 # ─── ADMIN: set device limit ─────────────────────────────────────────────────
@@ -372,7 +379,7 @@ def set_device_limit():
         kept   = dev_list[:limit]
         purged = [d['id'] for d in dev_list[limit:]]
         devices[key] = kept
-    _save_all(licenses, devices, exempt)
+    _save_all(licenses, devices, exempt, ui_config)
     return jsonify({
         'success':    True,
         'key':        key,
@@ -442,7 +449,7 @@ def ping():
                 d['last_ping'] = now_str
                 break
     devices[key] = dev_list
-    _save_all(licenses, devices, exempt)
+    _save_all(licenses, devices, exempt, ui_config)
     return jsonify({'ok': True})
 
 @app.route('/admin/set-ui-config', methods=['POST'])
