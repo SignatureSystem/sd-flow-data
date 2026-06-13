@@ -95,7 +95,16 @@ def _save_all(licenses, devices, exempt, ui_config=None):
         app.logger.error('veo_licenses save error: ' + str(e))
 
 # ─── ADMIN AUTH ───────────────────────────────────────────────────────────────
-ADMIN_SECRET = os.environ.get('ADMIN_SECRET', 'changeme123')
+ADMIN_SECRET  = os.environ.get('ADMIN_SECRET', 'changeme123')
+MIN_VERSION   = os.environ.get('MIN_VERSION', '1.0.2')  # Set in Railway Variables
+
+def _version_ok(v):
+    """Returns True if v >= MIN_VERSION"""
+    try:
+        def parse(s): return tuple(int(x) for x in s.split('.'))
+        return parse(v) >= parse(MIN_VERSION)
+    except:
+        return False
 
 def _auth(req):
     s = req.args.get('secret') or (req.get_json(silent=True) or {}).get('secret', '')
@@ -118,6 +127,10 @@ def flow_data():
 
     key      = request.args.get('key', '').strip()
     deviceId = request.args.get('deviceId', '').strip()
+
+    version  = request.args.get('v', '0.0.0').strip()
+    if not _version_ok(version):
+        return jsonify({'error': 'version_outdated', 'min_version': MIN_VERSION}), 403
 
     if not key:
         return jsonify({'error': 'missing key'}), 401
@@ -434,6 +447,10 @@ def check_license():
 def ping():
     key      = request.args.get('key', '').strip()
     deviceId = request.args.get('deviceId', '').strip()
+    version  = request.args.get('v', '0.0.0').strip()
+    if not _version_ok(version):
+        return jsonify({'error': 'version_outdated', 'min_version': MIN_VERSION}), 403
+
     if not key:
         return jsonify({'error': 'missing key'}), 401
     licenses, devices, exempt, ui_config = _load_all()
