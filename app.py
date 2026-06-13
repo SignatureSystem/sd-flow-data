@@ -115,7 +115,7 @@ def flow_data():
     if not key:
         return jsonify({'error': 'missing key'}), 401
 
-    licenses, devices, exempt = _load_all()
+    licenses, devices, exempt, ui_config = _load_all()
 
     entry = licenses.get(key)
     if not entry:
@@ -214,7 +214,7 @@ def reset_device():
     if not _auth(request):
         return jsonify({'error': 'unauthorized'}), 401
     key = request.args.get('key', '').strip()
-    licenses, devices, exempt = _load_all()
+    licenses, devices, exempt, ui_config = _load_all()
     if key not in licenses:
         return jsonify({'error': 'key not found'}), 404
     removed = devices.pop(key, None)
@@ -246,7 +246,7 @@ def list_devices():
 def list_licenses():
     if not _auth(request):
         return jsonify({'error': 'unauthorized'}), 401
-    licenses, devices, exempt = _load_all()
+    licenses, devices, exempt, ui_config = _load_all()
     return jsonify({'licenses': licenses, 'devices': devices, 'exempt': exempt})
 
 # ─── ADMIN: add license ───────────────────────────────────────────────────────
@@ -260,7 +260,7 @@ def add_license():
     plan    = body.get('plan', 'ultra')
     if not key or not expires:
         return jsonify({'error': 'key and expires required'}), 400
-    licenses, devices, exempt = _load_all()
+    licenses, devices, exempt, ui_config = _load_all()
     if key in licenses:
         return jsonify({'error': 'key already exists', 'expires': licenses[key]['expires']}), 409
     licenses[key] = {'expires': expires, 'plan': plan}
@@ -274,7 +274,7 @@ def revoke_license():
         return jsonify({'error': 'unauthorized'}), 401
     body = request.get_json(silent=True) or {}
     key  = body.get('key', '').strip()
-    licenses, devices, exempt = _load_all()
+    licenses, devices, exempt, ui_config = _load_all()
     if key not in licenses:
         return jsonify({'error': 'key not found'}), 404
     del licenses[key]
@@ -293,7 +293,7 @@ def extend_license():
     body = request.get_json(silent=True) or {}
     key  = body.get('key', '').strip()
     days = body.get('days', 0)
-    licenses, devices, exempt = _load_all()
+    licenses, devices, exempt, ui_config = _load_all()
     if key not in licenses:
         return jsonify({'error': 'key not found'}), 404
     try:
@@ -321,7 +321,7 @@ def reduce_license():
     body = request.get_json(silent=True) or {}
     key  = body.get('key', '').strip()
     days = body.get('days', 0)
-    licenses, devices, exempt = _load_all()
+    licenses, devices, exempt, ui_config = _load_all()
     if key not in licenses:
         return jsonify({'error': 'key not found'}), 404
     try:
@@ -354,7 +354,7 @@ def set_device_limit():
             raise ValueError
     except:
         return jsonify({'error': 'limit must be a positive integer'}), 400
-    licenses, devices, exempt = _load_all()
+    licenses, devices, exempt, ui_config = _load_all()
     if key not in licenses:
         return jsonify({'error': 'key not found'}), 404
     old_limit = int(licenses[key].get('device_limit', 1))
@@ -389,7 +389,7 @@ def check_license():
     if not _auth(request):
         return jsonify({'error': 'unauthorized'}), 401
     key = request.args.get('key', '').strip()
-    licenses, devices, exempt = _load_all()
+    licenses, devices, exempt, ui_config = _load_all()
     if key not in licenses:
         return jsonify({'error': 'key not found'}), 404
     dev = devices.get(key, [])
@@ -429,7 +429,7 @@ def ping():
     deviceId = request.args.get('deviceId', '').strip()
     if not key:
         return jsonify({'error': 'missing key'}), 401
-    licenses, devices, exempt = _load_all()
+    licenses, devices, exempt, ui_config = _load_all()
     if key not in licenses:
         return jsonify({'error': 'invalid key'}), 401
     # Update last_ping timestamp
@@ -445,6 +445,25 @@ def ping():
     _save_all(licenses, devices, exempt)
     return jsonify({'ok': True})
 
+@app.route('/admin/set-ui-config', methods=['POST'])
+def set_ui_config():
+    if not _auth(request):
+        return jsonify({'error': 'unauthorized'}), 401
+    body = request.get_json(silent=True) or {}
+    licenses, devices, exempt, ui_config = _load_all()
+    for k, v in body.items():
+        if k != 'secret':
+            ui_config[k] = v
+    _save_all(licenses, devices, exempt, ui_config)
+    return jsonify({'success': True, 'ui_config': ui_config})
+
+@app.route('/admin/get-ui-config', methods=['GET'])
+def get_ui_config():
+    if not _auth(request):
+        return jsonify({'error': 'unauthorized'}), 401
+    _, _, _, ui_config = _load_all()
+    return jsonify({'ui_config': ui_config})
+
 @app.route('/debug', methods=['GET'])
 def debug():
     if not _auth(request):
@@ -452,7 +471,7 @@ def debug():
     file_exists     = os.path.exists(LICENSE_FILE)
     cookies_exists  = os.path.exists(COOKIES_FILE)
     data_dir_files  = os.listdir(DATA_DIR) if os.path.isdir(DATA_DIR) else []
-    licenses, devices, exempt = _load_all()
+    licenses, devices, exempt, ui_config = _load_all()
     with _cookies_lock:
         cookies_len = len(_cookies_netscape)
     return jsonify({
