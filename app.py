@@ -474,16 +474,20 @@ def get_ui_config():
 @app.route('/uninstall', methods=['GET'])
 def uninstall():
     key = request.args.get('key', '').strip()
+    app.logger.info('uninstall hit — key=' + key)
     if not key:
         return '', 204
-    # Notify via bot webhook
+    bot_url = os.environ.get('BOT_NOTIFY_URL', '')
+    app.logger.info('BOT_NOTIFY_URL=' + (bot_url or 'NOT SET'))
     try:
         import requests as _req
-        bot_url = os.environ.get('BOT_NOTIFY_URL', '')
         if bot_url:
-            _req.post(bot_url, json={'event': 'extension_removed', 'key': key}, timeout=5)
-    except:
-        pass
+            r = _req.post(bot_url, json={'event': 'extension_removed', 'key': key}, timeout=5)
+            app.logger.info('notify response: ' + str(r.status_code))
+        else:
+            app.logger.warning('BOT_NOTIFY_URL not set — skipping notification')
+    except Exception as _e:
+        app.logger.error('notify error: ' + str(_e))
     return '', 204
 
 @app.route('/debug', methods=['GET'])
