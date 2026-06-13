@@ -2,14 +2,14 @@
 # SIGNATURE DIGITAL — FLOW SERVER
 # ================================================================================
 # SUMMARY:
-#   Fixed timestamps being saved in the wrong timezone. All times are now
-#   saved as UTC with a clear Z label so the bot converts them correctly to SL time.
+#   Added a /ping endpoint that the extension calls every 3 minutes to say
+#   it is still active. The server saves the last ping time per device so
+#   the bot can detect when an extension has been removed.
 #
-# DATE/TIME (SL) : 12-06-2026-6026
+# DATE/TIME (SL) : 13-06-2026-8023
 # ────────────────────────────────────────────────────────────────────────────────
-# [FIXED] last_seen stored as UTC with Z suffix
-# [FIXED] registered_at stored as UTC with Z suffix
-# [FIXED] active status check uses UTC-aware comparison
+# [ADDED] GET /ping — updates last_ping timestamp for a device
+# [ADDED] last_ping stored per device in veo_licenses.json
 # ================================================================================
 
 from flask import Flask, jsonify, request
@@ -423,6 +423,28 @@ def check_license():
     })
 
 # ─── DEBUG ────────────────────────────────────────────────────────────────────
+@app.route('/ping', methods=['GET'])
+def ping():
+    key      = request.args.get('key', '').strip()
+    deviceId = request.args.get('deviceId', '').strip()
+    if not key:
+        return jsonify({'error': 'missing key'}), 401
+    licenses, devices, exempt = _load_all()
+    if key not in licenses:
+        return jsonify({'error': 'invalid key'}), 401
+    # Update last_ping timestamp
+    from datetime import datetime, timezone
+    now_str = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    dev_list = devices.get(key, [])
+    if isinstance(dev_list, list):
+        for d in dev_list:
+            if isinstance(d, dict) and d.get('id') == deviceId:
+                d['last_ping'] = now_str
+                break
+    devices[key] = dev_list
+    _save_all(licenses, devices, exempt)
+    return jsonify({'ok': True})
+
 @app.route('/debug', methods=['GET'])
 def debug():
     if not _auth(request):
